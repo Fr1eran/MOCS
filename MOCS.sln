@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36705.20 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MOCS", "MOCS\MOCS.csproj", "{F8067B20-E813-4101-BBE6-D409C8395B3C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MOCS.Tests", "MOCS.Tests\MOCS.Tests.csproj", "{BF149752-24FA-428E-90DD-8CF3A4CB3B57}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F8067B20-E813-4101-BBE6-D409C8395B3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8067B20-E813-4101-BBE6-D409C8395B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8067B20-E813-4101-BBE6-D409C8395B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8067B20-E813-4101-BBE6-D409C8395B3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF149752-24FA-428E-90DD-8CF3A4CB3B57}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7D07CF6D-D5D9-4479-8F78-D251F83A34AB}
+	EndGlobalSection
+EndGlobal
