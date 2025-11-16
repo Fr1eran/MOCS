@@ -9,11 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Protocals\" />
-    <Folder Include="Coms\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Stateless" Version="5.20.0" />
     <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
     <PackageReference Include="System.Threading.Timer" Version="4.3.0" />
