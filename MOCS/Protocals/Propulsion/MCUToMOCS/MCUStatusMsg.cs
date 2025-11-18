@@ -7,12 +7,40 @@ using System.Threading.Tasks;
 namespace MOCS.Protocals.Propulsion.MCUToMOCS
 {
     /// <summary>
-    /// 牵引状态报文发送理由
+    /// 通道接收状态
     /// </summary>
-    public enum SendReason : byte
+    /// <remarks>注意通道编号</remarks>
+    public enum MCUStatus_ChannelRecvStatus : byte
+    {
+        Normal = 0x00,
+        CanNotRecv = 1 << 0,
+        OnlyRecvFaultMsg = 1 << 1,
+        CRCErrorOnce = 1 << 2,
+        OnlyMsgIdError = 1 << 3,
+        OnlyDesIdError = 1 << 4,
+        OnlySrcIdError = 1 << 5,
+    }
+
+    /// <summary>
+    /// 牵引状态报文发送理由（响应MOCS）
+    /// </summary>
+    public enum MCUStatus_SendReason : byte
     {
         Response = 0,
         TimeOut = 1,
+    }
+    ///<summary>
+    ///要重发以前MOCS（DCS）报文的数量
+    ///</summary>
+    public enum MCUStatus_RepeatMOCSMsgCount : byte
+    {
+        None=0x00,
+        Repeat1 = 0x01,
+        Repeat2 = 0x02,
+        Repeat3 = 0x03,
+        Repeat4 = 0x04,
+        Repeat5 = 0x05,
+        Repeat6 = 0x06,
     }
 
     /// <summary>
@@ -45,6 +73,10 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         Acurate = 1 << 2,
         UnAcurate = 1 << 3,
     }
+
+    /// <summary>
+    /// 牵引故障状态状态
+    /// </summary>
 
     public enum MCUFaultStatus : byte
     {
