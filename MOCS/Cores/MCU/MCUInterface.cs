@@ -40,43 +40,40 @@ namespace MOCS.Cores.MCU
             _mcuInterfaceSM.Fire(_changeMCUStateTrigger, MCUStateChangeCommand.PPT);
         }
 
-        public void LoginMaglevFrame()
-        {
-        }
+        public void LoginMaglevFrame() { }
 
-        public void SignOutMaglevFrame()
-        {
-        }
+        public void SignOutMaglevFrame() { }
 
-        public void TransmitTrackData()
-        {
-        }
+        public void TransmitTrackData() { }
 
-        public void DeleteTrackData()
-        {
-        }
+        public void DeleteTrackData() { }
 
-        public void TransmitMaximumCurve()
-        {
-        }
+        public void TransmitMaximumCurve() { }
 
-        public void DeleteMaximumCurve()
-        {
-        }
+        public void DeleteMaximumCurve() { }
 
         #endregion 面向界面层的公共接口
 
         public MCUInterface()
         {
-            _mcuInterfaceSM = new StateMachine<MCUInterfaceState, MCUInterfaceTrigger>(MCUInterfaceState.Stop);
-            _mcuStateChangeMonitorSM = new StateMachine<MCUStateChangeMonitorStates, MCUStateChangeMonitorTriggers>(
-                MCUStateChangeMonitorStates.Stop
+            _mcuInterfaceSM = new StateMachine<MCUInterfaceState, MCUInterfaceTrigger>(
+                MCUInterfaceState.Stop
             );
+            _mcuStateChangeMonitorSM = new StateMachine<
+                MCUStateChangeMonitorStates,
+                MCUStateChangeMonitorTriggers
+            >(MCUStateChangeMonitorStates.Stop);
             _changeMCUStateTrigger = _mcuInterfaceSM.SetTriggerParameters<MCUStateChangeCommand>(
                 MCUInterfaceTrigger.ChangeMCUState
             );
-            _mcuLifeCycleSendTimer = new HighPrecisionTimer(new TimeSpan(3000), MCULifeCycleSendTimeOut);
-            _mcuLifeCycleRecTimer = new HighPrecisionTimer(new TimeSpan(5000), MCULifeCycleRevTimeOut);
+            _mcuLifeCycleSendTimer = new HighPrecisionTimer(
+                new TimeSpan(3000),
+                MCULifeCycleSendTimeOut
+            );
+            _mcuLifeCycleRecTimer = new HighPrecisionTimer(
+                new TimeSpan(5000),
+                MCULifeCycleRevTimeOut
+            );
             _mcuDesState = MCUInterfaceState.Initial;
             ConfigMCUInterfaceStateMachine();
             ConfigPCSMonitorStateMachine();
@@ -92,7 +89,8 @@ namespace MOCS.Cores.MCU
             // 进入时，初始化和接口有关的所有状态
             // 启动事件触发时，转移至“未连接状态”
             // 离开时，启动生命周期报文发送定时器
-            _mcuInterfaceSM.Configure(MCUInterfaceState.Stop)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.Stop)
                 .OnEntry(InitStatus)
                 .Permit(MCUInterfaceTrigger.Activate, MCUInterfaceState.UnConnected)
                 .OnExit(t => ConfigureTimer(true, _mcuLifeCycleSendTimer));
@@ -102,7 +100,8 @@ namespace MOCS.Cores.MCU
             // 生命周期报文发送事件触发时，发送MOCS状态报文
             // 生命周期报文接收事件触发时，转移至“连接状态”
             // 关闭事件触发时，转移至“关闭状态”
-            _mcuInterfaceSM.Configure(MCUInterfaceState.UnConnected)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.UnConnected)
                 .OnEntry(SendLifeCycleMessage)
                 .InternalTransition(MCUInterfaceTrigger.MOCSLifeCycleMsgSend, SendLifeCycleMessage)
                 .Permit(MCUInterfaceTrigger.MCULifeCycleMsgRecvd, MCUInterfaceState.Connected)
@@ -116,12 +115,16 @@ namespace MOCS.Cores.MCU
             // 如果为真，则转移至“未连接状态”
             // 关闭事件触发时，转移至“停止状态”
             // 离开时，关闭生命周期报文接收超时定时器
-            _mcuInterfaceSM.Configure(MCUInterfaceState.Connected)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.Connected)
                 .OnEntry(t => ConfigureTimer(true, _mcuLifeCycleRecTimer))
                 .InitialTransition(MCUInterfaceState.UnKnown)
                 .InternalTransition(MCUInterfaceTrigger.MOCSLifeCycleMsgSend, SendLifeCycleMessage)
-                .PermitIf(MCUInterfaceTrigger.MCULifeCycleMsgRecvTimeOut, MCUInterfaceState.UnConnected,
-                    () => IsLifeCycleRecTimeOutBeyondLimits)
+                .PermitIf(
+                    MCUInterfaceTrigger.MCULifeCycleMsgRecvTimeOut,
+                    MCUInterfaceState.UnConnected,
+                    () => IsLifeCycleRecTimeOutBeyondLimits
+                )
                 .Permit(MCUInterfaceTrigger.Deactivate, MCUInterfaceState.Stop)
                 .OnExit(t => ConfigureTimer(false, _mcuLifeCycleRecTimer));
 
@@ -130,7 +133,8 @@ namespace MOCS.Cores.MCU
             // 进入时，启动牵引系统状态转换监视
             // 牵引系统状态转换完成事件触发时，转移至“初始状态”
             // 离开时，关闭牵引系统状态转换监视
-            _mcuInterfaceSM.Configure(MCUInterfaceState.UnKnown)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.UnKnown)
                 .SubstateOf(MCUInterfaceState.Connected)
                 .OnEntry(ActivateMCUStateChangeMonitior)
                 .Permit(MCUInterfaceTrigger.MCUStateHasChanged, MCUInterfaceState.Initial)
@@ -141,10 +145,13 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换事件触发时，响应相应的转换命令
             // 牵引系统状态转换完成事件触发时，转移至“基本状态”
             // 离开时，关闭牵引系统状态转换监视
-            _mcuInterfaceSM.Configure(MCUInterfaceState.Initial)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.Initial)
                 .SubstateOf(MCUInterfaceState.Connected)
-                .InternalTransition(_changeMCUStateTrigger,
-                    (command, t) => ChangeMCUInitialState(command))
+                .InternalTransition(
+                    _changeMCUStateTrigger,
+                    (command, t) => ChangeMCUInitialState(command)
+                )
                 .Permit(MCUInterfaceTrigger.MCUStateHasChanged, MCUInterfaceState.Basic)
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
@@ -153,10 +160,13 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换事件触发时，响应相应的转换命令
             // 牵引系统状态转换完成事件触发时，转移至与转换命令对应的状态
             // 离开时，关闭牵引系统状态转换监视
-            _mcuInterfaceSM.Configure(MCUInterfaceState.Basic)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.Basic)
                 .SubstateOf(MCUInterfaceState.Connected)
-                .InternalTransition(_changeMCUStateTrigger,
-                    (command, t) => ChangeMCUBasicState(command))
+                .InternalTransition(
+                    _changeMCUStateTrigger,
+                    (command, t) => ChangeMCUBasicState(command)
+                )
                 .PermitDynamic(MCUInterfaceTrigger.MCUStateHasChanged, () => _mcuDesState)
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
@@ -165,16 +175,20 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换事件触发时，响应相应的转换命令
             // 牵引系统状态转换完成事件触发时，转移至与转换命令对应的状态
             // 离开时，关闭牵引系统状态转换监视
-            _mcuInterfaceSM.Configure(MCUInterfaceState.StandbyWithCharged)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.StandbyWithCharged)
                 .SubstateOf(MCUInterfaceState.Connected)
-                .InternalTransition(_changeMCUStateTrigger,
-                    (command, t) => ChangeMCUStandbyWithChargedState(command))
+                .InternalTransition(
+                    _changeMCUStateTrigger,
+                    (command, t) => ChangeMCUStandbyWithChargedState(command)
+                )
                 .PermitDynamic(MCUInterfaceTrigger.MCUStateHasChanged, () => _mcuDesState)
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------准备测试状态-------------
             // 配置为“连接状态”的子状态
-            _mcuInterfaceSM.Configure(MCUInterfaceState.PreparedToTest)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.PreparedToTest)
                 .SubstateOf(MCUInterfaceState.Connected);
 
             // -----------带电牵引测试状态-------------
@@ -182,9 +196,13 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换事件触发时，开始状态转移
             // 牵引系统状态转换完成事件触发时，转移至“基本状态”
             // 离开时，关闭牵引系统状态转换监视
-            _mcuInterfaceSM.Configure(MCUInterfaceState.PropulsionTestWithCharged)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.PropulsionTestWithCharged)
                 .SubstateOf(MCUInterfaceState.Connected)
-                .InternalTransition(MCUInterfaceTrigger.ChangeMCUState, ChangeMCUPropulsionTestWithChargedState)
+                .InternalTransition(
+                    MCUInterfaceTrigger.ChangeMCUState,
+                    ChangeMCUPropulsionTestWithChargedState
+                )
                 .Permit(MCUInterfaceTrigger.MCUStateHasChanged, MCUInterfaceState.Basic)
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
@@ -193,29 +211,44 @@ namespace MOCS.Cores.MCU
             // 牵引系统状态转换事件触发时，开始状态转移
             // 牵引系统状态转换完成事件触发时，转移至“基本状态”
             // 离开时，关闭牵引系统状态转换监视
-            _mcuInterfaceSM.Configure(MCUInterfaceState.PropulsionTestWithNoCharged)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.PropulsionTestWithNoCharged)
                 .SubstateOf(MCUInterfaceState.Connected)
-                .InternalTransition(MCUInterfaceTrigger.ChangeMCUState, ChangeMCUPropulsionTestWithNoChargedState)
+                .InternalTransition(
+                    MCUInterfaceTrigger.ChangeMCUState,
+                    ChangeMCUPropulsionTestWithNoChargedState
+                )
                 .Permit(MCUInterfaceTrigger.MCUStateHasChanged, MCUInterfaceState.Basic)
                 .OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------模拟运行状态-------------
             // 配置为“连接状态”的子状态
-            _mcuInterfaceSM.Configure(MCUInterfaceState.SimulatedRunning)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.SimulatedRunning)
                 .SubstateOf(MCUInterfaceState.Connected);
             //.InternalTransition(MCUInterfaceTrigger.ChangeMCUState, changeMCUSimulatedRunningState)
             //.OnExit(DeactivateMCUStateChangeMonitor);
 
             // -----------悬浮架运行状态-------------
             // 配置为“连接状态”的子状态
-            _mcuInterfaceSM.Configure(MCUInterfaceState.MaglevFrameRunning)
+            _mcuInterfaceSM
+                .Configure(MCUInterfaceState.MaglevFrameRunning)
                 .SubstateOf(MCUInterfaceState.Connected)
                 .InternalTransition(MCUInterfaceTrigger.MaglevFrameLoginIn, SendMaglevFrameLoginMsg)
-                .InternalTransition(MCUInterfaceTrigger.MaglevFrameSignOut, SendMaglevFrameSignOutMsg)
+                .InternalTransition(
+                    MCUInterfaceTrigger.MaglevFrameSignOut,
+                    SendMaglevFrameSignOutMsg
+                )
                 .InternalTransition(MCUInterfaceTrigger.TransmitTrackData, SendTransmitTrackDataMsg)
                 .InternalTransition(MCUInterfaceTrigger.DeleteTrackData, SendDeleteTrackDataMsg)
-                .InternalTransition(MCUInterfaceTrigger.TransmitMaximumCurve, SendTransmitTrackDataMsg)
-                .InternalTransition(MCUInterfaceTrigger.DeleteMaximumCurve, SendDeleteTranmitMaximumCurveMsg);
+                .InternalTransition(
+                    MCUInterfaceTrigger.TransmitMaximumCurve,
+                    SendTransmitTrackDataMsg
+                )
+                .InternalTransition(
+                    MCUInterfaceTrigger.DeleteMaximumCurve,
+                    SendDeleteTranmitMaximumCurveMsg
+                );
 
             // 注册状态转移期间调用的回调函数
             _mcuInterfaceSM.OnTransitioned(OnMCUInterfaceSMTransition);
@@ -223,14 +256,23 @@ namespace MOCS.Cores.MCU
 
         private void ConfigPCSMonitorStateMachine()
         {
-            _mcuStateChangeMonitorSM.Configure(MCUStateChangeMonitorStates.Stop)
-                .Permit(MCUStateChangeMonitorTriggers.Activate, MCUStateChangeMonitorStates.Unchanged);
+            _mcuStateChangeMonitorSM
+                .Configure(MCUStateChangeMonitorStates.Stop)
+                .Permit(
+                    MCUStateChangeMonitorTriggers.Activate,
+                    MCUStateChangeMonitorStates.Unchanged
+                );
 
-            _mcuStateChangeMonitorSM.Configure(MCUStateChangeMonitorStates.Unchanged)
+            _mcuStateChangeMonitorSM
+                .Configure(MCUStateChangeMonitorStates.Unchanged)
                 .OnEntry(t => SendChangeMCUStateMsg(_mcuDesState))
-                .Permit(MCUStateChangeMonitorTriggers.Executed, MCUStateChangeMonitorStates.Changed);
+                .Permit(
+                    MCUStateChangeMonitorTriggers.Executed,
+                    MCUStateChangeMonitorStates.Changed
+                );
 
-            _mcuStateChangeMonitorSM.Configure(MCUStateChangeMonitorStates.Changed)
+            _mcuStateChangeMonitorSM
+                .Configure(MCUStateChangeMonitorStates.Changed)
                 .OnEntry(OnMCUStateHasChanged);
         }
 
@@ -239,13 +281,9 @@ namespace MOCS.Cores.MCU
             ConfigureTimer(false, _mcuLifeCycleSendTimer);
         }
 
-        private void SendLifeCycleMessage()
-        {
-        }
+        private void SendLifeCycleMessage() { }
 
-        private void SendChangeMCUStateMsg(MCUInterfaceState destinationState)
-        {
-        }
+        private void SendChangeMCUStateMsg(MCUInterfaceState destinationState) { }
 
         //private void setDeleteMCUStateChangeAlreadyFlag(bool flag)
         //{
@@ -260,8 +298,10 @@ namespace MOCS.Cores.MCU
             }
             else
             {
-                throw new InvalidOperationException($"Current MCUInterface State: {_mcuInterfaceSM.State.ToString()} " +
-                    $"cannot deal with trigger: {MCUInterfaceTrigger.MCUStateHasChanged.ToString()}");
+                throw new InvalidOperationException(
+                    $"Current MCUInterface State: {_mcuInterfaceSM.State.ToString()} "
+                        + $"cannot deal with trigger: {MCUInterfaceTrigger.MCUStateHasChanged.ToString()}"
+                );
             }
         }
 
@@ -274,8 +314,10 @@ namespace MOCS.Cores.MCU
                     break;
 
                 default:
-                    throw new InvalidOperationException($"Current State is {_mcuInterfaceSM.State.ToString()}." +
-                                                        $"Cannot process command: {command.ToString()} ");
+                    throw new InvalidOperationException(
+                        $"Current State is {_mcuInterfaceSM.State.ToString()}."
+                            + $"Cannot process command: {command.ToString()} "
+                    );
             }
             ActivateMCUStateChangeMonitior();
         }
@@ -301,8 +343,10 @@ namespace MOCS.Cores.MCU
                     break;
 
                 default:
-                    throw new InvalidOperationException($"Current State is {_mcuInterfaceSM.State.ToString()}." +
-                                                        $"Cannot process command: {command.ToString()} ");
+                    throw new InvalidOperationException(
+                        $"Current State is {_mcuInterfaceSM.State.ToString()}."
+                            + $"Cannot process command: {command.ToString()} "
+                    );
             }
             ActivateMCUStateChangeMonitior();
         }
@@ -320,8 +364,10 @@ namespace MOCS.Cores.MCU
                     break;
 
                 default:
-                    throw new InvalidOperationException($"Current State is {_mcuInterfaceSM.State.ToString()}." +
-                                                        $"Cannot process command: {command.ToString()} ");
+                    throw new InvalidOperationException(
+                        $"Current State is {_mcuInterfaceSM.State.ToString()}."
+                            + $"Cannot process command: {command.ToString()} "
+                    );
             }
             ActivateMCUStateChangeMonitior();
         }
@@ -344,7 +390,9 @@ namespace MOCS.Cores.MCU
             ActivateMCUStateChangeMonitior();
         }
 
-        private void OnMCUInterfaceSMTransition(StateMachine<MCUInterfaceState, MCUInterfaceTrigger>.Transition transition)
+        private void OnMCUInterfaceSMTransition(
+            StateMachine<MCUInterfaceState, MCUInterfaceTrigger>.Transition transition
+        )
         {
             // Debug状态下输出状态转移过程中的原状态、触发器、目标状态信息
 #if DEBUG
@@ -399,34 +447,28 @@ namespace MOCS.Cores.MCU
             }
         }
 
-        private void SendMaglevFrameLoginMsg()
-        {
-        }
+        private void SendMaglevFrameLoginMsg() { }
 
-        private void SendMaglevFrameSignOutMsg()
-        {
-        }
+        private void SendMaglevFrameSignOutMsg() { }
 
-        private void SendTransmitTrackDataMsg()
-        {
-        }
+        private void SendTransmitTrackDataMsg() { }
 
-        private void SendDeleteTrackDataMsg()
-        {
-        }
+        private void SendDeleteTrackDataMsg() { }
 
-        private void SendTransmitMaximumCurveMsg()
-        {
-        }
+        private void SendTransmitMaximumCurveMsg() { }
 
-        private void SendDeleteTranmitMaximumCurveMsg()
-        {
-        }
+        private void SendDeleteTranmitMaximumCurveMsg() { }
 
         private StateMachine<MCUInterfaceState, MCUInterfaceTrigger> _mcuInterfaceSM;
-        private StateMachine<MCUStateChangeMonitorStates, MCUStateChangeMonitorTriggers> _mcuStateChangeMonitorSM;
+        private StateMachine<
+            MCUStateChangeMonitorStates,
+            MCUStateChangeMonitorTriggers
+        > _mcuStateChangeMonitorSM;
 
-        private StateMachine<MCUInterfaceState, MCUInterfaceTrigger>.TriggerWithParameters<MCUStateChangeCommand> _changeMCUStateTrigger;
+        private StateMachine<
+            MCUInterfaceState,
+            MCUInterfaceTrigger
+        >.TriggerWithParameters<MCUStateChangeCommand> _changeMCUStateTrigger;
         private MCUInterfaceState _mcuDesState;
 
         private HighPrecisionTimer _mcuLifeCycleSendTimer;

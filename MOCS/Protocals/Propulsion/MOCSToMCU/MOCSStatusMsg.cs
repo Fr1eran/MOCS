@@ -89,7 +89,5 @@ namespace MOCS.Protocals.Propulsion.MOCSToMCU
         CanNotHandleResendRequest = 1 << 1,
     }
 
-    public sealed class MOCSStatusMsg : BaseSendMsg
-    {
-    }
+    public sealed class MOCSStatusMsg : BaseSendMsg { }
 }

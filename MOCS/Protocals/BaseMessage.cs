@@ -1,4 +1,4 @@
-namespace MOCS.Protocals.Propulsion
+namespace MOCS.Protocals
 {
     /// <summary>
     /// MOCS与MCU接口协议报文抽象基类
@@ -36,7 +36,7 @@ namespace MOCS.Protocals.Propulsion
         /// <summary>
         /// 报文标识
         /// </summary>
-        public abstract byte MsgId { get; set; }
+        public byte MsgId { get; set; }
 
         /// <summary>
         /// 用户数据段

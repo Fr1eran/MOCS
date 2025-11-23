@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MOCS.Utils;
 
-namespace MOCS.Protocals.Propulsion.MOCSToMCU
+namespace MOCS.Protocals
 {
     /// <summary>
     /// MOCS发往MCU的报文基类
