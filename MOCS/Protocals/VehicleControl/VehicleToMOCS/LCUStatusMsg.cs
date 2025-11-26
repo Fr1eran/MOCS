@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MOCS.Coms;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
@@ -84,5 +85,5 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
         Failed = 1 << 7,
     }
 
-    public class LCUStatusMsg { }
+    public class LCUStatusMsg : BaseMessage, IIncomingMsg<BaseMessage> { }
 }

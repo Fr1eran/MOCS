@@ -41,13 +41,13 @@ namespace MOCS.Protocals
         /// <summary>
         /// 用户数据段
         /// </summary>
-        public virtual ReadOnlyMemory<byte> Payload { get; set; }
+        public virtual ReadOnlyMemory<byte> UserData { get; set; }
 
         /// <summary>
         /// 报文长度(word)
         /// </summary>
         /// <remarks>8字节报文帧固定数据段，用户数据段，2字节CRC</remarks>
-        public byte LengthInWords => (byte)((8 + Payload.Length + 2) / 2);
+        public byte LengthInWords => (byte)((8 + UserData.Length + 2) / 2);
 
         //public static void WriteLittleEndian(BinaryWriter writer, ushort value)
         //{

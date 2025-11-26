@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MOCS.Coms;
 
 namespace MOCS.Protocals.Propulsion.MCUToMOCS
 {
@@ -87,5 +88,5 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         UnDefine = 0xFF,
     }
 
-    public sealed class MCUStatusMsg : BaseMessage, IIncomingMsg { }
+    public sealed class MCUStatusMsg : BaseMessage, IIncomingMsg<BaseMessage> { }
 }

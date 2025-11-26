@@ -5,73 +5,64 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MOCS.Coms;
 using MOCS.Utils;
 
 namespace MOCS.Protocals
 {
-    public static class MessageFactory
+    public sealed class MessageFactory<TBaseMsg> : IMessageParser<TBaseMsg>
+        where TBaseMsg : class
     {
-        /// <summary>
-        /// 报文帧头
-        /// </summary>
-        public static byte MsgHead { get; } = 0x02;
+        private readonly byte _msgHead;
+        private readonly byte _msgTail;
 
         /// <summary>
-        /// 报文帧尾
+        /// 报文标识符唯一时的解析器
         /// </summary>
-        public static byte MsgTail { get; } = 0x03;
+        private readonly Dictionary<
+            byte,
+            Func<ReadOnlyMemory<byte>, (TBaseMsg? message, string? error)>
+        > _parsers = [];
 
         /// <summary>
-        /// 悬浮控制器数据帧1报文标识号
+        /// 报文标识符不唯一且在一定范围内的解析器
         /// </summary>
-        public static byte LeviControllerStatusMsgAId { get; } = 0x81;
+        private readonly List<(
+            byte low,
+            byte high,
+            Func<ReadOnlyMemory<byte>, (TBaseMsg? message, string? error)> parser
+        )> _rangeParsers = [];
 
-        /// <summary>
-        /// 悬浮控制器数据帧2报文标识号
-        /// </summary>
-        public static byte LeviControllerStatusMsgBId { get; } = 0x82;
-
-        /// <summary>
-        /// 涡流定位测速系统状态报文标识符下界
-        /// </summary>
-        public static byte VSPSStatusMsgIdLow { get; } = 0xE1;
-
-        /// <summary>
-        /// 涡流定位测速系统状态报文标识符上界
-        /// </summary>
-        public static byte VSPSStatusMsgIdHigh { get; } = 0xEF;
-
-        /// <summary>
-        /// 车载OBC状态报文标识符下界
-        /// </summary>
-        public static byte OBCStatusMsgIdLow { get; } = 0xF1;
-
-        /// <summary>
-        /// 车载OBC状态报文标识符下界
-        /// </summary>
-        public static byte OBCStatusMsgIdHigh { get; } = 0xFF;
-
-        //private static readonly Dictionary<
-        //    byte,
-        //    Func<ReadOnlySpan<byte>, (IIncomingMsg?, string?)>
-        //> _mcuMsgParsers = [];
-
-        /// <summary>
-        /// 将发送报文类转换为字节数组
-        /// </summary>
-        /// <param name="msg"></param>
-        /// <returns></returns>
-        public static byte[] ToByteArray(IOutgoingMsg msg)
+        public MessageFactory(byte? msgHead = null, byte? msgTail = null)
         {
-            var msgBody = msg.ToByteArray() ?? Array.Empty<byte>();
+            _msgHead = msgHead ?? 0x02;
+            _msgTail = msgTail ?? 0x03;
+        }
 
-            var result = new byte[msgBody.Length + 2];
-            result[0] = MsgHead;
+        /// <summary>
+        /// 注册单个报文标识符对应的解析器
+        /// </summary>
+        /// <param name="msgId"></param>
+        /// <param name="parser"></param>
+        public void RegisterParser(
+            byte msgId,
+            Func<ReadOnlyMemory<byte>, (TBaseMsg? message, string? error)> parser
+        )
+        {
+            ArgumentNullException.ThrowIfNull(parser);
+            _parsers[msgId] = parser;
+        }
 
-            Buffer.BlockCopy(msgBody, 0, result, 1, msgBody.Length);
-
-            result[result.Length - 1] = MsgTail;
-            return result;
+        public void RegisterRangeParser(
+            byte low,
+            byte high,
+            Func<ReadOnlyMemory<byte>, (TBaseMsg? message, string? error)> parser
+        )
+        {
+            ArgumentNullException.ThrowIfNull(parser);
+            if (low > high)
+                throw new ArgumentException($"low:{low} must <= high:{high}", nameof(low));
+            _rangeParsers.Add((low, high, parser));
         }
 
         /// <summary>
@@ -82,64 +73,112 @@ namespace MOCS.Protocals
         /// <param name="message"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-        public static bool TryParseMessage(
-            ReadOnlySpan<byte> buffer,
-            [NotNullWhen(true)] out IIncomingMsg? message,
+        public bool TryParseMessage(
+            ReadOnlyMemory<byte> buffer,
+            [NotNullWhen(true)] out TBaseMsg? message,
             out string? error
         )
         {
             message = null;
             error = null;
+
             if (buffer.Length < 10)
             {
                 error = "报文长度过短";
                 return false;
             }
 
-            var head = buffer[0];
-            var tail = buffer[^1];
+            var span = buffer.Span;
+            var head = span[0];
+            var tail = span[^1];
 
-            if (head != MsgHead | tail != MsgTail)
+            if (head != _msgHead || tail != _msgTail)
             {
-                error = "报文帧头尾不符合协议规定";
+                error = "报文帧头尾字节不符合协议规定";
                 return false;
             }
 
-            var msgBody = buffer[1..^1];
-
-            var seq = BinaryPrimitives.ReadUInt16LittleEndian(msgBody.Slice(0, 2));
-            var repeat = msgBody[2];
-            var lenWords = msgBody[3];
-            var dest = msgBody[4];
-            var src = msgBody[5];
-            var partId = msgBody[6];
-            var msgId = msgBody[7];
-            var receiveCrc = BinaryPrimitives.ReadUInt16LittleEndian(msgBody[^2..]);
-
+            var lenWords = span[4];
             int expectedTotalBytes = lenWords * 2;
-            if (buffer.Length - 2 != expectedTotalBytes)
+            if (span.Length - 2 != expectedTotalBytes)
             {
                 error = "报文长度不匹配";
                 return false;
             }
 
-            int payloadLen = expectedTotalBytes - 10; // 8 header + 2 CRC
-            if (payloadLen < 0 || payloadLen % 2 != 0)
+            int userdataLen = expectedTotalBytes - 10; // 8 header + 2 CRC
+            if (userdataLen < 0 || userdataLen % 2 != 0)
             {
                 error = "用户数据段长度有误";
                 return false;
             }
 
-            var calcCrc = CRC16CCITT.Compute(msgBody);
+            var receiveCrc = BinaryPrimitives.ReadUInt16LittleEndian(
+                span.Slice(1 + expectedTotalBytes - 2, 2)
+            );
+
+            // 提取报文主体传递给对应报文类型的解析器
+            var msgBodyMemory = buffer.Slice(1, expectedTotalBytes - 2);
+            var msgBodySpan = msgBodyMemory.Span;
+
+            // 计算 CRC（仅对不含 CRC 的消息体）
+            var calcCrc = CRC16CCITT.Compute(msgBodySpan);
             if (calcCrc != receiveCrc)
             {
                 error = "CRC校验失败";
                 return false;
             }
 
-            var payload = msgBody.Slice(8, payloadLen);
+            var msgId = span[8]; // 读取报文标识符
 
-            return true;
+            // 尝试找到解析器：优先通过匹配精确报文标识符
+            if (_parsers.TryGetValue(msgId, out var exactParser))
+            {
+                try
+                {
+                    var (parsed, err) = exactParser(msgBodyMemory);
+                    if (parsed is null)
+                    {
+                        error = err ?? "解析器返回空实例";
+                        return false;
+                    }
+
+                    message = parsed;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    error = $"解析器抛出异常: {ex.Message}";
+                    return false;
+                }
+            }
+            // 如果没匹配到，则通过范围确定对应的解析器
+            foreach (var (low, high, parser) in _rangeParsers)
+            {
+                if (msgId >= low && msgId <= high)
+                {
+                    try
+                    {
+                        var (parsed, err) = parser(msgBodyMemory);
+                        if (parsed is null)
+                        {
+                            error = err ?? "范围解析器返回空实例";
+                            return false;
+                        }
+
+                        message = parsed;
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        error = $"范围解析器抛出异常: {ex.Message}";
+                        return false;
+                    }
+                }
+            }
+
+            error = $"未注册解析器，msgId=0x{msgId:X2}";
+            return false;
         }
     }
 }

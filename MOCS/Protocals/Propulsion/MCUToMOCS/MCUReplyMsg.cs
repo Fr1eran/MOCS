@@ -61,5 +61,5 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         SimulationRunning = 0x80,
     }
 
-    public sealed class MCUReplyMsg : BaseMessage, IOutgoingMsg { }
+    public sealed class MCUReplyMsg : BaseMessage, IOutgoingMsg<BaseMessage> { }
 }

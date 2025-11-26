@@ -15,7 +15,7 @@ namespace MOCS.Protocals
     {
         public byte[] ToByteArray()
         {
-            int payloadLength = Payload.Length;
+            int payloadLength = UserData.Length;
             if (payloadLength % 2 != 0)
             {
                 throw new InvalidOperationException("用户数据段长度必须为偶数！");
@@ -32,7 +32,7 @@ namespace MOCS.Protocals
             span[5] = Source;
             span[6] = PartId;
             span[7] = MsgId;
-            Payload.Span.CopyTo(span.Slice(8));
+            UserData.Span.CopyTo(span.Slice(8));
 
             // 计算并写入CRC
             ushort crc = CRC16CCITT.Compute(span[..^2]);

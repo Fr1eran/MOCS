@@ -4,10 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MOCS.Coms;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
-    public class OBCStatusMsg : IIncomingMsg
+    public class OBCStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
     {
         public bool ControlModeSwitch { get; }
         public bool EmergencyStop { get; }
@@ -20,8 +21,8 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
         public bool ModeSwitch { get; }
 
         public static bool TryParse(
-            ReadOnlySpan<byte> buffer,
-            [NotNullWhen(true)] out IIncomingMsg? msg,
+            ReadOnlyMemory<byte> buffer,
+            [NotNullWhen(true)] out BaseMessage? msg,
             out string? error
         ) { }
     }
