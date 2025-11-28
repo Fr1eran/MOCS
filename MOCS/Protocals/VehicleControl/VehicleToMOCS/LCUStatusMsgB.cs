@@ -9,18 +9,8 @@ using MOCS.Coms;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
-    public class OBCStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
+    public class LCUStatusMsgB : BaseMessage, IIncomingMsg<BaseMessage>
     {
-        //public bool ControlModeSwitch { get; }
-        //public bool EmergencyStop { get; }
-        //public bool BatteryStatus { get; }
-        //public bool BatteryContactStatus { get; }
-        //public bool CollectorStatus { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-
         public static bool TryParse(
             ReadOnlyMemory<byte> buffer,
             [NotNullWhen(true)] out BaseMessage? msg,
@@ -31,11 +21,17 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             error = null;
 
             var span = buffer.Span;
-
-            var statusMsgLen = buffer.Length - 9;
-            if (statusMsgLen != 15)
+            var CANID = span[8];
+            if (CANID < 0X61 | CANID > 0X74)
             {
-                error = $"车载OBC的状态报文有用数据段长度:{statusMsgLen}不为15字节";
+                error = $"悬浮控制器的2类CAN数据帧ID:{CANID:X2}与规定目标范围0X61~0X74不符";
+                return false;
+            }
+
+            var statusMsgLen = buffer.Length - 10;
+            if (statusMsgLen != 8)
+            {
+                error = $"悬浮控制器的CAN数据帧长度:{statusMsgLen}不为8字节";
                 return false;
             }
 
@@ -46,7 +42,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var partId = span[6];
             var msgId = span[7];
 
-            msg = new OBCStatusMsg
+            msg = new LCUStatusMsgB
             {
                 SequenceNumber = seq,
                 RepeatCounter = repeat,
@@ -54,7 +50,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 Source = src,
                 PartId = partId,
                 MsgId = msgId,
-                UserData = buffer.Slice(9, 15),
+                UserData = buffer.Slice(9, 8),
             };
             return true;
         }

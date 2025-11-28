@@ -8,13 +8,30 @@ using MOCS.Protocals;
 
 namespace MOCS.Coms
 {
-    public class MessageDispatcher<TBaseMsg>
+    public interface IHandlerInvoker
+    {
+        Task Invoke(object message);
+    }
+
+    public class HandlerInvoker<T> : IHandlerInvoker
+    {
+        private readonly Func<T, Task> _typedHandler;
+
+        public HandlerInvoker(Func<T, Task> typedHandler)
+        {
+            _typedHandler = typedHandler;
+        }
+
+        public Task Invoke(object message)
+        {
+            return _typedHandler((T)message);
+        }
+    }
+
+    public class MessageDispatcher
     {
         // 根据接收报文的类型注册的回调集合
-        private readonly ConcurrentDictionary<Type, Func<TBaseMsg, Task>> _handlers = [];
-
-        //private readonly Dictionary<Type, Delegate> _handlers = [];
-        //private readonly object _handlerslock = new();
+        private readonly ConcurrentDictionary<Type, IHandlerInvoker> _handlers = [];
 
         /// <summary>
         /// 注册同步回调（内部包装为异步）
@@ -23,7 +40,6 @@ namespace MOCS.Coms
         /// <typeparam name="T"></typeparam>
         /// <param name="handler"></param>
         public void Subscribe<T>(Action<T> handler)
-            where T : TBaseMsg
         {
             ArgumentNullException.ThrowIfNull(handler);
             Subscribe<T>(msg =>
@@ -39,12 +55,12 @@ namespace MOCS.Coms
         /// <typeparam name="T"></typeparam>
         /// <param name="handler"></param>
         public void Subscribe<T>(Func<T, Task> handler)
-            where T : TBaseMsg
         {
             ArgumentNullException.ThrowIfNull(handler);
             var messageType = typeof(T);
-            Task wrapper(TBaseMsg msg) => handler((T)msg);
-            _handlers[messageType] = wrapper;
+
+            var invoker = new HandlerInvoker<T>(handler);
+            _handlers[messageType] = invoker;
         }
 
         /// <summary>
@@ -53,23 +69,39 @@ namespace MOCS.Coms
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public bool UnSubscribe<T>()
-            where T : TBaseMsg
         {
             return _handlers.TryRemove(typeof(T), out _);
         }
 
-        public Task Dispatch(TBaseMsg msg)
+        public Task Dispatch(object msg)
         {
             if (msg == null)
             {
                 return Task.CompletedTask;
             }
             var messageType = msg.GetType();
-            if (_handlers.TryGetValue(messageType, out var handler) && handler != null)
+            if (_handlers.TryGetValue(messageType, out var invoker) && invoker != null)
             {
-                return handler(msg) ?? Task.CompletedTask;
+                return invoker.Invoke(msg);
             }
             return Task.CompletedTask;
         }
+
+        /// <summary>
+        /// 获取已注册指定类型的异步回调数量
+        /// </summary>
+        public int HandlerCount => _handlers.Count;
+
+        /// <summary>
+        /// 检查是否已注册指定类型的异步回调
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public bool IsSubscribed<T>() => _handlers.ContainsKey(typeof(T));
+
+        /// <summary>
+        /// 清空所有已注册的异步回调
+        /// </summary>
+        public void Clear() => _handlers.Clear();
     }
 }

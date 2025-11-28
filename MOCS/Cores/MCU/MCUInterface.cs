@@ -459,8 +459,8 @@ namespace MOCS.Cores.MCU
 
         private void SendDeleteTranmitMaximumCurveMsg() { }
 
-        private StateMachine<MCUInterfaceState, MCUInterfaceTrigger> _mcuInterfaceSM;
-        private StateMachine<
+        private readonly StateMachine<MCUInterfaceState, MCUInterfaceTrigger> _mcuInterfaceSM;
+        private readonly StateMachine<
             MCUStateChangeMonitorStates,
             MCUStateChangeMonitorTriggers
         > _mcuStateChangeMonitorSM;

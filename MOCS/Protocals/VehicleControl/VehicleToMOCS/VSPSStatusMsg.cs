@@ -9,18 +9,8 @@ using MOCS.Coms;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
-    public class OBCStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
+    public class VSPSStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
     {
-        //public bool ControlModeSwitch { get; }
-        //public bool EmergencyStop { get; }
-        //public bool BatteryStatus { get; }
-        //public bool BatteryContactStatus { get; }
-        //public bool CollectorStatus { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-
         public static bool TryParse(
             ReadOnlyMemory<byte> buffer,
             [NotNullWhen(true)] out BaseMessage? msg,
@@ -32,10 +22,17 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 
             var span = buffer.Span;
 
-            var statusMsgLen = buffer.Length - 9;
-            if (statusMsgLen != 15)
+            var CANID = span[8];
+            if (CANID != 0X5F)
             {
-                error = $"车载OBC的状态报文有用数据段长度:{statusMsgLen}不为15字节";
+                error = $"车载VSPS的CAN数据帧ID:{CANID:X2}与规定值0X5F不符";
+                return false;
+            }
+
+            var statusMsgLen = buffer.Length - 10;
+            if (statusMsgLen != 12)
+            {
+                error = $"车载VSPS的状态报文有用数据段长度:{statusMsgLen}不为12字节";
                 return false;
             }
 
@@ -46,7 +43,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var partId = span[6];
             var msgId = span[7];
 
-            msg = new OBCStatusMsg
+            msg = new VSPSStatusMsg
             {
                 SequenceNumber = seq,
                 RepeatCounter = repeat,
@@ -54,7 +51,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 Source = src,
                 PartId = partId,
                 MsgId = msgId,
-                UserData = buffer.Slice(9, 15),
+                UserData = buffer.Slice(9, 12),
             };
             return true;
         }

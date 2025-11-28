@@ -17,7 +17,7 @@ namespace MOCS.Coms
         private readonly CancellationTokenSource _cts = new();
 
         // 根据接收报文的类型注册的回调集合
-        private readonly MessageDispatcher<TBaseMsg> _dispatcher;
+        private readonly MessageDispatcher _dispatcher;
 
         // 报文实例工厂类
         private readonly IMessageParser<TBaseMsg> _messageFactory;
@@ -35,7 +35,7 @@ namespace MOCS.Coms
             _sender = new UdpClient();
             _receiver = new UdpClient(new IPEndPoint(localIp, localPort));
             RemoteEndPoint = new IPEndPoint(remoteIp, remotePort);
-            _dispatcher = new MessageDispatcher<TBaseMsg>();
+            _dispatcher = new MessageDispatcher();
             _messageFactory = messageFactory ?? new MessageFactory<TBaseMsg>();
 
             Task.Run(ReceiveLoop, _cts.Token);
@@ -81,7 +81,7 @@ namespace MOCS.Coms
                     var result = await _receiver.ReceiveAsync(_cts.Token);
                     if (_messageFactory.TryParseMessage(result.Buffer, out var msg, out var err))
                     {
-                        _dispatcher.Dispatch(msg);
+                        await _dispatcher.Dispatch(msg);
                     }
                     else
                     {
