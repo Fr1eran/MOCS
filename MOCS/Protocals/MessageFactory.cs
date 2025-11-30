@@ -10,7 +10,7 @@ using MOCS.Utils;
 
 namespace MOCS.Protocals
 {
-    public sealed class MessageFactory<TBaseMsg> : IMessageParser<TBaseMsg>
+    public sealed class MessageFactory<TBaseMsg> : IMessageFactory<TBaseMsg>
         where TBaseMsg : class
     {
         private readonly byte _msgHead;
@@ -39,6 +39,23 @@ namespace MOCS.Protocals
             _msgTail = msgTail ?? 0x03;
         }
 
+        public byte[] ToTransmitByteArray(ReadOnlySpan<byte> payLoad)
+        {
+            int totalBytes = 1 + payLoad.Length + 2 + 1;
+            byte[] result = new byte[totalBytes];
+
+            result[0] = _msgHead;
+
+            payLoad.CopyTo(result.AsSpan(1, payLoad.Length));
+
+            ushort crc = CRC16CCITT.Compute(payLoad);
+            BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(1 + payLoad.Length, 2), crc);
+
+            result[^1] = _msgTail;
+
+            return result;
+        }
+
         /// <summary>
         /// 注册单个报文标识符对应的解析器
         /// </summary>
@@ -53,6 +70,13 @@ namespace MOCS.Protocals
             _parsers[msgId] = parser;
         }
 
+        /// <summary>
+        /// 注册某报文标识范围对应的解析器
+        /// </summary>
+        /// <param name="low"></param>
+        /// <param name="high"></param>
+        /// <param name="parser"></param>
+        /// <exception cref="ArgumentException"></exception>
         public void RegisterRangeParser(
             byte low,
             byte high,
@@ -153,13 +177,13 @@ namespace MOCS.Protocals
                 }
             }
             // 如果没匹配到，则通过范围确定对应的解析器
-            foreach (var (low, high, parser) in _rangeParsers)
+            foreach (var (low, high, rangeparser) in _rangeParsers)
             {
                 if (msgId >= low && msgId <= high)
                 {
                     try
                     {
-                        var (parsed, err) = parser(msgBodyMemory);
+                        var (parsed, err) = rangeparser(msgBodyMemory);
                         if (parsed is null)
                         {
                             error = err ?? "范围解析器返回空实例";

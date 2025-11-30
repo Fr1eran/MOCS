@@ -3,36 +3,33 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using MOCS.Coms;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
-    public class LCUStatusMsgB : BaseMessage, IIncomingMsg<BaseMessage>
+    public class EMSStatusMsgA : BaseMessage, IIncomingMsg<BaseMessage>
     {
-        public static bool TryParse(
-            ReadOnlyMemory<byte> buffer,
-            [NotNullWhen(true)] out BaseMessage? msg,
-            out string? error
-        )
+        public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
         {
-            msg = null;
-            error = null;
+            EMSStatusMsgA? msg = null;
+            string? error = null;
 
             var span = buffer.Span;
             var CANID = span[8];
-            if (CANID < 0X61 | CANID > 0X74)
+            if (CANID < 0X21 | CANID > 0X34)
             {
-                error = $"悬浮控制器的2类CAN数据帧ID:{CANID:X2}与规定目标范围0X61~0X74不符";
-                return false;
+                error = $"悬浮控制器的1类CAN数据帧ID:{CANID:X2}与规定目标范围0x21~0x34不符";
+                return (msg, error);
             }
 
             var statusMsgLen = buffer.Length - 10;
             if (statusMsgLen != 8)
             {
                 error = $"悬浮控制器的CAN数据帧长度:{statusMsgLen}不为8字节";
-                return false;
+                return (msg, error);
             }
 
             var seq = BinaryPrimitives.ReadUInt16LittleEndian(span[..2]);
@@ -42,7 +39,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var partId = span[6];
             var msgId = span[7];
 
-            msg = new LCUStatusMsgB
+            msg = new EMSStatusMsgA
             {
                 SequenceNumber = seq,
                 RepeatCounter = repeat,
@@ -50,9 +47,10 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 Source = src,
                 PartId = partId,
                 MsgId = msgId,
-                UserData = buffer.Slice(9, 8),
+                UserData = buffer.Slice(8, 9),
             };
-            return true;
+
+            return (msg, error);
         }
     }
 }

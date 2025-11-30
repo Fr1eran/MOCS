@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MOCS.Coms;
 
 namespace MOCS.Protocals.Propulsion.MCUToMOCS
 {
@@ -61,5 +62,14 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         SimulationRunning = 0x80,
     }
 
-    public sealed class MCUReplyMsg : BaseMessage, IOutgoingMsg<BaseMessage> { }
+    public sealed class MCUReplyMsg : BaseMessage, IIncomingMsg<BaseMessage>
+    {
+        public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
+        {
+            MCUReplyMsg? msg = null;
+            string? error = null;
+
+            return (msg, error);
+        }
+    }
 }

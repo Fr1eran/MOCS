@@ -25,7 +25,7 @@ namespace MOCS.Protocals
             var span = buffer.AsSpan();
 
             // 写入数据
-            BinaryPrimitives.WriteUInt128LittleEndian(span, SequenceNumber);
+            BinaryPrimitives.WriteUInt16LittleEndian(span, SequenceNumber);
             span[2] = RepeatCounter;
             span[3] = LengthInWords;
             span[4] = Destination;

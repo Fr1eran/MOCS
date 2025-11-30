@@ -88,5 +88,14 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         UnDefine = 0xFF,
     }
 
-    public sealed class MCUStatusMsg : BaseMessage, IIncomingMsg<BaseMessage> { }
+    public sealed class MCUStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
+    {
+        public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
+        {
+            MCUStatusMsg? msg = null;
+            string? error = null;
+
+            return (msg, error);
+        }
+    }
 }

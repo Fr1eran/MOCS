@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using MOCS.Utils;
 using Stateless;
 
@@ -54,7 +55,12 @@ namespace MOCS.Cores.MCU
 
         #endregion 面向界面层的公共接口
 
-        public MCUInterface()
+        public MCUInterface(
+            IPAddress localIpAddress,
+            int localPort,
+            IPAddress remoteIpAddress,
+            int remotePort
+        )
         {
             _mcuInterfaceSM = new StateMachine<MCUInterfaceState, MCUInterfaceTrigger>(
                 MCUInterfaceState.Stop
@@ -67,11 +73,11 @@ namespace MOCS.Cores.MCU
                 MCUInterfaceTrigger.ChangeMCUState
             );
             _mcuLifeCycleSendTimer = new HighPrecisionTimer(
-                new TimeSpan(3000),
+                new TimeSpan(0, 0, 3),
                 MCULifeCycleSendTimeOut
             );
             _mcuLifeCycleRecTimer = new HighPrecisionTimer(
-                new TimeSpan(5000),
+                new TimeSpan(0, 0, 5),
                 MCULifeCycleRevTimeOut
             );
             _mcuDesState = MCUInterfaceState.Initial;

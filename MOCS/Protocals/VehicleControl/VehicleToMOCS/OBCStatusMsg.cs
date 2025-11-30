@@ -11,24 +11,10 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
     public class OBCStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
     {
-        //public bool ControlModeSwitch { get; }
-        //public bool EmergencyStop { get; }
-        //public bool BatteryStatus { get; }
-        //public bool BatteryContactStatus { get; }
-        //public bool CollectorStatus { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-        //public bool ModeSwitch { get; }
-
-        public static bool TryParse(
-            ReadOnlyMemory<byte> buffer,
-            [NotNullWhen(true)] out BaseMessage? msg,
-            out string? error
-        )
+        public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
         {
-            msg = null;
-            error = null;
+            OBCStatusMsg? msg = null;
+            string? error = null;
 
             var span = buffer.Span;
 
@@ -36,7 +22,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             if (statusMsgLen != 15)
             {
                 error = $"车载OBC的状态报文有用数据段长度:{statusMsgLen}不为15字节";
-                return false;
+                return (msg, error);
             }
 
             var seq = BinaryPrimitives.ReadUInt16LittleEndian(span[..2]);
@@ -56,7 +42,8 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 MsgId = msgId,
                 UserData = buffer.Slice(9, 15),
             };
-            return true;
+
+            return (msg, error);
         }
     }
 }

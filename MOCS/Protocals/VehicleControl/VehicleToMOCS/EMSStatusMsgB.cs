@@ -9,26 +9,25 @@ using MOCS.Coms;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
-    public class VSPSStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
+    public class EMSStatusMsgB : BaseMessage, IIncomingMsg<BaseMessage>
     {
         public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
         {
-            VSPSStatusMsg? msg = null;
+            EMSStatusMsgB? msg = null;
             string? error = null;
 
             var span = buffer.Span;
-
             var CANID = span[8];
-            if (CANID != 0X5F)
+            if (CANID < 0X61 | CANID > 0X74)
             {
-                error = $"车载VSPS的CAN数据帧ID:{CANID:X2}与规定值0X5F不符";
+                error = $"悬浮控制器的2类CAN数据帧ID:{CANID:X2}与规定目标范围0X61~0X74不符";
                 return (msg, error);
             }
 
             var statusMsgLen = buffer.Length - 10;
-            if (statusMsgLen != 12)
+            if (statusMsgLen != 8)
             {
-                error = $"车载VSPS的状态报文有用数据段长度:{statusMsgLen}不为12字节";
+                error = $"悬浮控制器的CAN数据帧长度:{statusMsgLen}不为8字节";
                 return (msg, error);
             }
 
@@ -39,7 +38,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var partId = span[6];
             var msgId = span[7];
 
-            msg = new VSPSStatusMsg
+            msg = new EMSStatusMsgB
             {
                 SequenceNumber = seq,
                 RepeatCounter = repeat,
@@ -47,7 +46,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 Source = src,
                 PartId = partId,
                 MsgId = msgId,
-                UserData = buffer.Slice(9, 12),
+                UserData = buffer.Slice(9, 8),
             };
 
             return (msg, error);

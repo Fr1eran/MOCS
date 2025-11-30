@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MOCS.Coms
 {
-    public interface IMessageParser<TBaseMsg>
+    public interface IMessageFactory<TBaseMsg>
         where TBaseMsg : class
     {
         /// <summary>
@@ -28,7 +28,7 @@ namespace MOCS.Coms
         /// </summary>
         /// <param name="msgId"></param>
         /// <param name="parser"></param>
-        public void RegisterParser(
+        void RegisterParser(
             byte msgId,
             Func<ReadOnlyMemory<byte>, (TBaseMsg? message, string? error)> parser
         );
@@ -39,10 +39,17 @@ namespace MOCS.Coms
         /// <param name="low"></param>
         /// <param name="high"></param>
         /// <param name="parser"></param>
-        public void RegisterRangeParser(
+        void RegisterRangeParser(
             byte low,
             byte high,
             Func<ReadOnlyMemory<byte>, (TBaseMsg? message, string? error)> parser
         );
+
+        /// <summary>
+        /// 将报文主体封装为目标传输报文
+        /// </summary>
+        /// <param name="payLoad"></param>
+        /// <returns></returns>
+        byte[] ToTransmitByteArray(ReadOnlySpan<byte> payLoad);
     }
 }
