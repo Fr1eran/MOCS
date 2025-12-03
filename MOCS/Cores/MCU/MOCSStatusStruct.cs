@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MOCS.Cores.MCU
 {
-    public struct MOCSStatus
+    public struct MOCSStatusStruct
     {
         /// <summary>
         /// 接收通道1状态

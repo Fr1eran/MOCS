@@ -14,7 +14,7 @@ namespace MOCS
         private Logger? DiagnosticLogger;
         private Logger? SendLogger;
         private Logger? ReceiveLogger;
-        private VCInterface? VCIF;
+        private VCUInterface? VCIF;
 
         //private readonly MCUInterface? MCUIF;
 
@@ -27,7 +27,7 @@ namespace MOCS
                 SendLogger = LogManager.GetLogger("SendLogger");
                 ReceiveLogger = LogManager.GetLogger("ReceiveLogger");
 
-                VCIF = new VCInterface(DiagnosticLogger, ReceiveLogger, SendLogger);
+                VCIF = new VCUInterface(DiagnosticLogger, ReceiveLogger, SendLogger);
             };
         }
 

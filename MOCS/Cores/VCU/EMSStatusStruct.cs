@@ -3,7 +3,7 @@ namespace MOCS.Cores.VC
     /// <summary>
     /// 悬浮控制器状态
     /// </summary>
-    public struct EMSStatus
+    public struct EMSStatusStruct
     {
         /// <summary>
         /// 间隙传感器阵列状态

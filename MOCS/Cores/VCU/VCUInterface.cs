@@ -1,28 +1,21 @@
-using System;
 using System.Buffers.Binary;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using MOCS.Coms;
+using MOCS.Cores.VCU;
 using MOCS.Protocals;
 using MOCS.Protocals.VehicleControl.MOCSToVehicle;
 using MOCS.Protocals.VehicleControl.VehicleToMOCS;
 using MOCS.Utils;
 using NLog;
 using Stateless;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace MOCS.Cores.VC
 {
     /// <summary>
     /// 车载控制器接口类
     /// </summary>
-    public class VCInterface
+    public class VCUInterface
     {
         #region 面向界面层的公共接口
 
@@ -44,7 +37,7 @@ namespace MOCS.Cores.VC
 
         #endregion
 
-        public VCInterface(ILogger syslogger, ILogger recvlogger, ILogger sendlogger)
+        public VCUInterface(ILogger syslogger, ILogger recvlogger, ILogger sendlogger)
         {
             SysLogger = syslogger;
             RecvLogger = recvlogger;
@@ -64,22 +57,25 @@ namespace MOCS.Cores.VC
         private void Init()
         {
             // 初始化LCU状态集合
-            for (int i = 0; i < _LCUNums - 1; i++)
+            for (int i = 0; i < LCUNums - 1; i++)
             {
                 LCUStatusCollection[i] = default;
             }
 
             // 初始化GCU状态集合
-            for (int i = 0; i < _GCUNums - 1; i++)
+            for (int i = 0; i < GCUNums - 1; i++)
             {
                 GCUStatusCollection[i] = default;
             }
 
             // 初始化VSPS信息集合
-            for (int i = 0; i < _VSPSNums - 1; i++)
+            for (int i = 0; i < VSPSNums - 1; i++)
             {
                 VSPSInfoCollection[i] = default;
             }
+
+            // 初始化OBC控制命令
+            OBCControl = new OBCControlStruct();
         }
 
         #region 私有配置方法
@@ -95,10 +91,7 @@ namespace MOCS.Cores.VC
             _vcInterfaceSM
                 .Configure(VCInterfaceState.Running)
                 .Permit(VCInterfaceTrigger.Deactivate, VCInterfaceState.Stop)
-                .InternalTransitionAsync(
-                    VCInterfaceTrigger.LCUMsgSend,
-                    t => SendEMSControlMsgAsync()
-                )
+                .InternalTransitionAsync(VCInterfaceTrigger.LCUMsgSend, SendMsgToVCU)
                 .OnExitAsync(StopCommunicate);
         }
 
@@ -107,7 +100,7 @@ namespace MOCS.Cores.VC
             _udpMsgSevice?.RegisterParser((byte)0x81, EMSStatusMsgA.Parse);
             _udpMsgSevice?.RegisterParser((byte)0x82, EMSStatusMsgB.Parse);
             _udpMsgSevice?.RegisterParser((byte)0xE1, VSPSStatusMsg.Parse);
-            _udpMsgSevice?.RegisterRangeParser((byte)0xF1, (byte)0xFF, OBCStatusMsg.Parse);
+            _udpMsgSevice?.RegisterRangeParser((byte)0xF1, (byte)0xFF, OBCMsg.Parse);
         }
 
         private void ConfigMsgHandlers()
@@ -138,31 +131,6 @@ namespace MOCS.Cores.VC
 
         private void BeginCommunicate()
         {
-            byte[] data =
-            [
-                0x00,
-                0x94,
-                0x00,
-                0x0A,
-                0x01,
-                0x0D,
-                0x01,
-                0x81,
-                0x2E,
-                0x00,
-                0x00,
-                0x00,
-                0x00,
-                0x00,
-                0x00,
-                0x00,
-                0x00,
-                0x00,
-            ];
-            ushort crc = CRC16CCITT.Compute(data);
-            SysLogger.Debug(
-                $"0x00 94 00 0A 01 0D 01 81 2E 00 00 00 00 00 00 00 00 00 CRC计算结果: {crc:X2}"
-            );
             _udpMsgSevice = new UdpMessageService<BaseMessage>(
                 LocalIpAddress,
                 LocalPort,
@@ -193,17 +161,40 @@ namespace MOCS.Cores.VC
             await _vcInterfaceSM.FireAsync(VCInterfaceTrigger.LCUMsgSend);
         }
 
+        private async Task SendMsgToVCU()
+        {
+            await SendEMSControlMsgAsync();
+            await SendOBCControlMsgAsync();
+        }
+
+        #region 消息发送方法
         private async Task SendEMSControlMsgAsync()
         {
-            _currentLCUSequenceNum = _sequenceManager.GetNextSequence(PacketCategory.C);
-            EMSControlMsg msg = new() { SequenceNumber = _currentLCUSequenceNum, MsgId = 0x21 };
+            var sequenceNum = _sequenceManager.GetNextSequence(PacketCategory.C);
+            EMSControlMsg msg = new() { SequenceNumber = sequenceNum, MsgId = 0x21 };
             if (_udpMsgSevice != null)
             {
                 await _udpMsgSevice.SendAsync(msg);
             }
         }
 
-        #region 消息处理器
+        private async Task SendOBCControlMsgAsync()
+        {
+            var sequenceNum = _sequenceManager.GetNextSequence(PacketCategory.F);
+            OBCMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                MsgId = 0x71,
+                UserData = OBCControl?.ToBytesArray(),
+            };
+            if (_udpMsgSevice != null)
+            {
+                await _udpMsgSevice.SendAsync(msg);
+            }
+        }
+        #endregion
+
+        #region 消息处理方法
 
         private void OnRecvEMSStatusMsgA(EMSStatusMsgA msg)
         {
@@ -214,14 +205,14 @@ namespace MOCS.Cores.VC
             }
 
             var EMSId = msg.PartId;
-            if (EMSId < 0x01 | EMSId > _LCUNums)
+            if (EMSId < 0x01 | EMSId > LCUNums)
             {
                 // 悬浮控制器标识号超出范围
                 return;
             }
 
             var CANData = msg.UserData.Span;
-            ref EMSStatus EMS = ref LCUStatusCollection[EMSId];
+            ref EMSStatusStruct EMS = ref LCUStatusCollection[EMSId];
             EMS.GapSensorsStatus = (GapSensorsStatusEnum)(CANData[0] & (byte)0xE0);
             EMS.EMSCmd = (EMSCmdStatusEnum)(CANData[0] & (byte)0x10);
             EMS.Life = (byte)(CANData[0] & (byte)0x0F);
@@ -262,14 +253,14 @@ namespace MOCS.Cores.VC
             }
 
             var EMSId = msg.PartId;
-            if (EMSId < 0x01 | EMSId > _LCUNums)
+            if (EMSId < 0x01 | EMSId > LCUNums)
             {
                 // 悬浮控制器标识号超出范围
                 return;
             }
 
             var CANData = msg.UserData.Span;
-            ref EMSStatus EMS = ref LCUStatusCollection[EMSId];
+            ref EMSStatusStruct EMS = ref LCUStatusCollection[EMSId];
             EMS.GapSensor1Status = (GapSensorStatusEnum)(CANData[1] & (byte)0x80);
             EMS.Gap1 = (float)((CANData[1] & (byte)0x7F) * 0.157480);
             EMS.GapSensor2Status = (GapSensorStatusEnum)(CANData[2] & (byte)0x80);
@@ -288,7 +279,7 @@ namespace MOCS.Cores.VC
         private void OnRecvVSPSStatusMsg(VSPSStatusMsg msg)
         {
             var VSPSId = msg.PartId;
-            if (VSPSId < 0x01 | VSPSId > _VSPSNums)
+            if (VSPSId < 0x01 | VSPSId > VSPSNums)
             {
                 // 涡流传感定位测速系统标识号超出范围
                 return;
@@ -296,7 +287,7 @@ namespace MOCS.Cores.VC
 
             var data = msg.UserData.Span;
             // VSPSId 取值范围为 1~_VSPSNums，InlineArray 索引应为 0~(_VSPSNums-1)
-            ref VSPSInfo VSPS = ref VSPSInfoCollection[VSPSId - 1];
+            ref VSPSInfoStruct VSPS = ref VSPSInfoCollection[VSPSId - 1];
             VSPS.Life = data[0];
             VSPS.Forward = data[1] == (byte)0x01;
             VSPS.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
@@ -314,16 +305,17 @@ namespace MOCS.Cores.VC
         private readonly HighPrecisionTimer _EMSControlMsgSendTimer;
         private UdpMessageService<BaseMessage>? _udpMsgSevice;
 
-        private ushort _currentLCUSequenceNum = 0;
         private readonly SequenceManager<ushort> _sequenceManager;
 
-        private const byte _LCUNums = 6;
-        private const byte _GCUNums = 6;
+        public byte LCUNums { get; } = 6;
+        public byte GCUNums { get; } = 6;
         public LCUStatusArray LCUStatusCollection;
         public GCUStatusArray GCUStatusCollection;
 
-        private const byte _VSPSNums = 2;
+        public byte VSPSNums { get; } = 2;
         public VSPSInfoArray VSPSInfoCollection;
+
+        public OBCControlStruct? OBCControl { get; set; }
 
         // 日志记录器
         private readonly ILogger SysLogger;
@@ -339,7 +331,7 @@ namespace MOCS.Cores.VC
     [InlineArray(6)]
     public struct LCUStatusArray
     {
-        private EMSStatus _element0;
+        private EMSStatusStruct _element0;
     }
 
     /// <summary>
@@ -348,7 +340,7 @@ namespace MOCS.Cores.VC
     [InlineArray(6)]
     public struct GCUStatusArray
     {
-        private EMSStatus _element0;
+        private EMSStatusStruct _element0;
     }
 
     /// <summary>
@@ -357,6 +349,6 @@ namespace MOCS.Cores.VC
     [InlineArray(2)]
     public struct VSPSInfoArray
     {
-        private VSPSInfo _element0;
+        private VSPSInfoStruct _element0;
     }
 }

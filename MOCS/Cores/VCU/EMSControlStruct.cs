@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MOCS.Cores.VC
 {
-    public struct EMSControl
+    public struct EMSControlStruct
     {
         /// <summary>
         /// 悬浮架运行方向

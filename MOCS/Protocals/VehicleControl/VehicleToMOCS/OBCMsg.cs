@@ -10,11 +10,18 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
-    public class OBCStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
+    public class OBCMsg : BaseSendMsg, IIncomingMsg<BaseMessage>
     {
+        private ReadOnlyMemory<byte> _userData;
+        public override ReadOnlyMemory<byte> UserData
+        {
+            get => this._userData;
+            set { this._userData = ToUserData(value); }
+        }
+
         public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
         {
-            OBCStatusMsg? msg = null;
+            OBCMsg? msg = null;
             string? error = null;
 
             var span = buffer.Span;
@@ -34,7 +41,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var msgId = span[7];
             SysWideLogger.Info($"收到VSPS状态报文, MsgID: {msgId:X2}");
 
-            msg = new OBCStatusMsg
+            msg = new OBCMsg
             {
                 SequenceNumber = seq,
                 RepeatCounter = repeat,
@@ -46,6 +53,16 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             };
 
             return (msg, error);
+        }
+
+        private static readonly byte PaddingBytesNum = 1;
+
+        private static ReadOnlyMemory<byte> ToUserData(ReadOnlyMemory<byte> buffer)
+        {
+            var result = new byte[buffer.Length + PaddingBytesNum];
+            buffer.CopyTo(result);
+            result[buffer.Length] = 0x00;
+            return result;
         }
     }
 }

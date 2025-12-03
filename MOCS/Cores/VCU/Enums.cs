@@ -21,7 +21,7 @@ namespace MOCS.Cores.VC
     }
     #endregion
 
-    #region EMS控制器
+    #region EMS状态帧
     /// <summary>
     /// 间隙传感器阵列状态
     /// Normal - 正常
@@ -279,7 +279,7 @@ namespace MOCS.Cores.VC
 
     #endregion
 
-    #region EMS控制器控制帧
+    #region EMS控制帧
     /// <summary>
     /// 悬浮架运行方向
     /// Invalid - 无效
@@ -341,5 +341,42 @@ namespace MOCS.Cores.VC
         Cut = 0b_0110_0000,
         Reset = 0b_0100_0000,
     }
+    #endregion
+
+    #region OBC控制
+
+    /// <summary>
+    /// 电池控制命令
+    /// Enable - 启动
+    /// Disable - 关闭
+    /// </summary>
+    public enum BatteryCmdEnum
+    {
+        Enable,
+        Disable,
+    }
+
+    /// <summary>
+    /// 电源命令
+    /// Close - 合闸
+    /// Open - 分闸
+    /// </summary>
+    public enum PowerCmdEnum
+    {
+        Close,
+        Open,
+    }
+
+    /// <summary>
+    /// 受流器命令
+    /// Extend - 伸出
+    /// Retract - 缩回
+    /// </summary>
+    public enum PantographCmdEnum
+    {
+        Extend,
+        Retract,
+    }
+
     #endregion
 }

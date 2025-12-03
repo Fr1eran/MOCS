@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MOCS.Cores.VC
 {
-    public struct VSPSInfo
+    public struct VSPSInfoStruct
     {
         /// <summary>
         /// 生命信号
@@ -33,7 +33,7 @@ namespace MOCS.Cores.VC
         /// </summary>
         public ushort Speed { get; set; }
 
-        public VSPSInfo()
+        public VSPSInfoStruct()
         {
             Life = 0;
             Forward = true;
