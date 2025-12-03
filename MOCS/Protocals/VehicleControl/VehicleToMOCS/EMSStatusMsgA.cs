@@ -19,6 +19,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 
             var span = buffer.Span;
             var CANID = span[8];
+            SysWideLogger.Info($"收到EMS控制器第一类状态报文, CANID: {CANID:X2}");
             if (CANID < 0X21 | CANID > 0X34)
             {
                 error = $"悬浮控制器的1类CAN数据帧ID:{CANID:X2}与规定目标范围0x21~0x34不符";

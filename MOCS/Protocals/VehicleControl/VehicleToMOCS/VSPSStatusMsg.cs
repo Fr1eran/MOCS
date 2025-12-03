@@ -19,6 +19,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var span = buffer.Span;
 
             var CANID = span[8];
+            SysWideLogger.Info($"收到VSPS状态报文, CANID: {CANID:X2}");
             if (CANID != 0X5F)
             {
                 error = $"车载VSPS的CAN数据帧ID:{CANID:X2}与规定值0X5F不符";

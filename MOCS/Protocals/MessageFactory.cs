@@ -149,7 +149,7 @@ namespace MOCS.Protocals
             var calcCrc = CRC16CCITT.Compute(msgBodySpan);
             if (calcCrc != receiveCrc)
             {
-                error = "CRC校验失败";
+                error = $"CRC校验失败 期望CRC: {calcCrc:X2} 实际CRC: {receiveCrc:X2}";
                 return false;
             }
 

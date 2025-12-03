@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MOCS.Protocals.VehicleControl.MOCSToVehicle
 {
-    public class EMSControlMsg : BaseSendMsg, IOutgoingMsg
+    public class EMSControlMsg : BaseSendMsg
     {
         /// <summary>
         /// 报文标识号下限
@@ -19,8 +19,11 @@ namespace MOCS.Protocals.VehicleControl.MOCSToVehicle
         private const byte MsgIdHigh = 0x3F;
 
         /// <summary>
-        /// 悬浮控制器控制帧ID
+        /// EMS控制器控制帧ID
         /// </summary>
-        private const byte ControlMsgId = 0x55;
+        private const byte EMSControlCANMsgId = 0x55;
+
+        public override ReadOnlyMemory<byte> UserData { get; set; } =
+            new byte[] { 0x55, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     }
 }

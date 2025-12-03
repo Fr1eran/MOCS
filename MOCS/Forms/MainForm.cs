@@ -1,20 +1,35 @@
 using System.Net;
 using MOCS.Cores.MCU;
 using MOCS.Cores.VC;
+using NLog;
 
 namespace MOCS
 {
     public partial class MainForm : Form
     {
+        //public static readonly Logger DiagnosticLogger = LogManager.GetLogger("DiagnosticLogger");
+        //public static readonly Logger SendLogger = LogManager.GetLogger("SendLogger");
+        //public static readonly Logger ReceiveLogger = LogManager.GetLogger("ReceiveLogger");
+
+        private Logger? DiagnosticLogger;
+        private Logger? SendLogger;
+        private Logger? ReceiveLogger;
+        private VCInterface? VCIF;
+
+        //private readonly MCUInterface? MCUIF;
+
         public MainForm()
         {
             InitializeComponent();
-            VCIF = new VCInterface();
+            Load += (s, e) =>
+            {
+                DiagnosticLogger = LogManager.GetLogger("DiagnosticLogger");
+                SendLogger = LogManager.GetLogger("SendLogger");
+                ReceiveLogger = LogManager.GetLogger("ReceiveLogger");
+
+                VCIF = new VCInterface(DiagnosticLogger, ReceiveLogger, SendLogger);
+            };
         }
-
-        private readonly VCInterface VCIF;
-
-        //private readonly MCUInterface? MCUIF;
 
         private void VCSendIPTextBox_TextChanged(object sender, EventArgs e)
         {
@@ -30,7 +45,10 @@ namespace MOCS
                     );
                     return;
                 }
-                VCIF.RemoteIpAddress = remoteIP;
+                if (VCIF != null)
+                {
+                    VCIF.RemoteIpAddress = remoteIP;
+                }
             }
         }
 
@@ -52,7 +70,10 @@ namespace MOCS
                     );
                     return;
                 }
-                VCIF.RemotePort = remotePort;
+                if (VCIF != null)
+                {
+                    VCIF.RemotePort = remotePort;
+                }
             }
         }
 
@@ -74,18 +95,27 @@ namespace MOCS
                     );
                     return;
                 }
-                VCIF.LocalPort = localPort;
+                if (VCIF != null)
+                {
+                    VCIF.LocalPort = localPort;
+                }
             }
         }
 
         private async void BeginVehicleComButton_Click(object sender, EventArgs e)
         {
-            await VCIF.StartAsync();
+            if (VCIF != null)
+            {
+                await VCIF.StartAsync();
+            }
         }
 
         private async void StopVehicleComButton_Click(object sender, EventArgs e)
         {
-            await VCIF.StopAsync();
+            if (VCIF != null)
+            {
+                await VCIF.StopAsync();
+            }
         }
     }
 }

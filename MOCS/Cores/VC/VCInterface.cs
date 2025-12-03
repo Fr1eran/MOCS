@@ -4,6 +4,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using MOCS.Coms;
@@ -11,7 +12,10 @@ using MOCS.Protocals;
 using MOCS.Protocals.VehicleControl.MOCSToVehicle;
 using MOCS.Protocals.VehicleControl.VehicleToMOCS;
 using MOCS.Utils;
+using NLog;
 using Stateless;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace MOCS.Cores.VC
 {
@@ -39,8 +43,12 @@ namespace MOCS.Cores.VC
         }
 
         #endregion
-        public VCInterface()
+
+        public VCInterface(ILogger syslogger, ILogger recvlogger, ILogger sendlogger)
         {
+            SysLogger = syslogger;
+            RecvLogger = recvlogger;
+            SendLogger = sendlogger;
             _vcInterfaceSM = new StateMachine<VCInterfaceState, VCInterfaceTrigger>(
                 VCInterfaceState.Stop
             );
@@ -52,6 +60,29 @@ namespace MOCS.Cores.VC
 
             ConfigVCInterfaceStateMachine();
         }
+
+        private void Init()
+        {
+            // 初始化LCU状态集合
+            for (int i = 0; i < _LCUNums - 1; i++)
+            {
+                LCUStatusCollection[i] = default;
+            }
+
+            // 初始化GCU状态集合
+            for (int i = 0; i < _GCUNums - 1; i++)
+            {
+                GCUStatusCollection[i] = default;
+            }
+
+            // 初始化VSPS信息集合
+            for (int i = 0; i < _VSPSNums - 1; i++)
+            {
+                VSPSInfoCollection[i] = default;
+            }
+        }
+
+        #region 私有配置方法
 
         private void ConfigVCInterfaceStateMachine()
         {
@@ -75,7 +106,7 @@ namespace MOCS.Cores.VC
         {
             _udpMsgSevice?.RegisterParser((byte)0x81, EMSStatusMsgA.Parse);
             _udpMsgSevice?.RegisterParser((byte)0x82, EMSStatusMsgB.Parse);
-            _udpMsgSevice?.RegisterRangeParser((byte)0xE1, (byte)0xEF, VSPSStatusMsg.Parse);
+            _udpMsgSevice?.RegisterParser((byte)0xE1, VSPSStatusMsg.Parse);
             _udpMsgSevice?.RegisterRangeParser((byte)0xF1, (byte)0xFF, OBCStatusMsg.Parse);
         }
 
@@ -86,39 +117,65 @@ namespace MOCS.Cores.VC
             _udpMsgSevice?.Subscribe<VSPSStatusMsg>(OnRecvVSPSStatusMsg);
         }
 
-        private void Init()
+        private void ConfigureTimer(bool active, HighPrecisionTimer timer)
         {
-            // 初始化LCU状态集合
-            for (int i = 0; i < _LCUNums; i++)
+            if (timer != null)
             {
-                LCUStatusCollection[i] = new EMSStatus();
-            }
-
-            // 初始化GCU状态集合
-            for (int i = 0; i < _GCUNums; i++)
-            {
-                GCUStatusCollection[i] = new EMSStatus();
-            }
-
-            // 初始化VSPS信息集合
-            for (int i = 0; i < _VSPSNums; i++)
-            {
-                VSPSInfoCollection[i] = new VSPSInfo();
+                if (active)
+                {
+                    SysLogger.Info("启动EMS控制器生命周期报文发送定时器");
+                    timer.Start();
+                }
+                else
+                {
+                    SysLogger.Info("关闭EMS控制器生命周期报文发送定时器");
+                    timer.Stop();
+                }
             }
         }
 
+        #endregion
+
         private void BeginCommunicate()
         {
+            byte[] data =
+            [
+                0x00,
+                0x94,
+                0x00,
+                0x0A,
+                0x01,
+                0x0D,
+                0x01,
+                0x81,
+                0x2E,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+            ];
+            ushort crc = CRC16CCITT.Compute(data);
+            SysLogger.Debug(
+                $"0x00 94 00 0A 01 0D 01 81 2E 00 00 00 00 00 00 00 00 00 CRC计算结果: {crc:X2}"
+            );
             _udpMsgSevice = new UdpMessageService<BaseMessage>(
                 LocalIpAddress,
                 LocalPort,
                 RemoteIpAddress,
-                RemotePort
+                RemotePort,
+                RecvLogger,
+                SendLogger
             );
             ConfigMsgParsers();
             ConfigMsgHandlers();
             ConfigureTimer(true, _EMSControlMsgSendTimer);
             _udpMsgSevice.StartListening();
+            SysLogger.Info($"开始监听端口: {LocalPort}");
         }
 
         private async Task StopCommunicate()
@@ -128,21 +185,7 @@ namespace MOCS.Cores.VC
             {
                 await _udpMsgSevice.DisposeAsync();
             }
-        }
-
-        private void ConfigureTimer(bool active, HighPrecisionTimer timer)
-        {
-            if (timer != null)
-            {
-                if (active)
-                {
-                    timer.Start();
-                }
-                else
-                {
-                    timer.Stop();
-                }
-            }
+            SysLogger.Info($"停止监听端口: {LocalPort}");
         }
 
         private async void EMSControlMsgSendTimeOut()
@@ -153,7 +196,7 @@ namespace MOCS.Cores.VC
         private async Task SendEMSControlMsgAsync()
         {
             _currentLCUSequenceNum = _sequenceManager.GetNextSequence(PacketCategory.C);
-            EMSControlMsg msg = new() { SequenceNumber = _currentLCUSequenceNum };
+            EMSControlMsg msg = new() { SequenceNumber = _currentLCUSequenceNum, MsgId = 0x21 };
             if (_udpMsgSevice != null)
             {
                 await _udpMsgSevice.SendAsync(msg);
@@ -164,12 +207,6 @@ namespace MOCS.Cores.VC
 
         private void OnRecvEMSStatusMsgA(EMSStatusMsgA msg)
         {
-            //if (msg.SequenceNumber != _currentLCUSequenceNum)
-            //{
-            //    // 序列号不一致
-            //    return;
-            //}
-
             if (msg.Destination != 0x01)
             {
                 // 目标MOCS编号与当前MOCS编号不一致
@@ -218,12 +255,6 @@ namespace MOCS.Cores.VC
 
         private void OnRecvEMSStatusMsgB(EMSStatusMsgB msg)
         {
-            //if (msg.SequenceNumber != _currentLCUSequenceNum)
-            //{
-            //    // 序列号不一致
-            //    return;
-            //}
-
             if (msg.Destination != 0x01)
             {
                 // 目标MOCS编号与当前MOCS编号不一致
@@ -260,10 +291,12 @@ namespace MOCS.Cores.VC
             if (VSPSId < 0x01 | VSPSId > _VSPSNums)
             {
                 // 涡流传感定位测速系统标识号超出范围
+                return;
             }
 
             var data = msg.UserData.Span;
-            ref VSPSInfo VSPS = ref VSPSInfoCollection[VSPSId];
+            // VSPSId 取值范围为 1~_VSPSNums，InlineArray 索引应为 0~(_VSPSNums-1)
+            ref VSPSInfo VSPS = ref VSPSInfoCollection[VSPSId - 1];
             VSPS.Life = data[0];
             VSPS.Forward = data[1] == (byte)0x01;
             VSPS.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
@@ -272,7 +305,7 @@ namespace MOCS.Cores.VC
 
         #endregion
 
-        public IPAddress LocalIpAddress { get; set; } = IPAddress.Parse("127.0.0.1");
+        public IPAddress LocalIpAddress { get; set; } = IPAddress.Parse("192.168.43.1");
         public int LocalPort { get; set; } = 6001;
         public IPAddress RemoteIpAddress { get; set; } = IPAddress.Parse("192.168.43.10");
         public int RemotePort { get; set; } = 8001;
@@ -286,10 +319,44 @@ namespace MOCS.Cores.VC
 
         private const byte _LCUNums = 6;
         private const byte _GCUNums = 6;
-        public EMSStatus[] LCUStatusCollection = new EMSStatus[_LCUNums];
-        public EMSStatus[] GCUStatusCollection = new EMSStatus[_GCUNums];
+        public LCUStatusArray LCUStatusCollection;
+        public GCUStatusArray GCUStatusCollection;
 
         private const byte _VSPSNums = 2;
-        public VSPSInfo[] VSPSInfoCollection = new VSPSInfo[_VSPSNums];
+        public VSPSInfoArray VSPSInfoCollection;
+
+        // 日志记录器
+        private readonly ILogger SysLogger;
+        private readonly ILogger RecvLogger;
+        private readonly ILogger SendLogger;
+    }
+
+    // 声明内联数组，强制分配在栈上
+
+    /// <summary>
+    /// 悬浮控制器状态数组
+    /// </summary>
+    [InlineArray(6)]
+    public struct LCUStatusArray
+    {
+        private EMSStatus _element0;
+    }
+
+    /// <summary>
+    /// 导向控制器状态数组
+    /// </summary>
+    [InlineArray(6)]
+    public struct GCUStatusArray
+    {
+        private EMSStatus _element0;
+    }
+
+    /// <summary>
+    /// VSPS信息数组
+    /// </summary>
+    [InlineArray(2)]
+    public struct VSPSInfoArray
+    {
+        private VSPSInfo _element0;
     }
 }

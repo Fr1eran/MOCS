@@ -1,3 +1,5 @@
+using NLog;
+
 namespace MOCS
 {
     internal static class Program

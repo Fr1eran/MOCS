@@ -1,5 +1,6 @@
 namespace MOCS.Cores.MCU
 {
+    #region 牵引系统通讯接口状态机
     public enum MCUInterfaceState
     {
         Stop, // 停止状态
@@ -75,4 +76,107 @@ namespace MOCS.Cores.MCU
         Executed,
         UnExecute,
     }
+    #endregion
+
+    #region MOCS状态报文
+    /// <summary>
+    /// 通道接收状态
+    /// Normal - 接收通道正常
+    /// CanNotRecv - 此通道接收不到报文
+    /// OnlyRecvFaultMsg - 通道只能接收到错误报文
+    /// CRCErrorOnce - 发生一次CRC错误
+    /// OnlyMsgIdError - 只有报文标识号错误, CRC正确
+    /// OnlyDesIdError  - 只有目的方编码错误
+    /// OnlySrcIdError - 只有发送方编码错误
+    /// </summary>
+    /// <remarks>注意通道编号</remarks>
+    public enum ChannelRecvStatusEnum : byte
+    {
+        Normal = 0x00,
+        CanNotRecv = 1 << 0,
+        OnlyRecvFaultMsg = 1 << 1,
+        CRCErrorOnce = 1 << 2,
+        OnlyMsgIdError = 1 << 3,
+        OnlyDesIdError = 1 << 4,
+        OnlySrcIdError = 1 << 5,
+    }
+
+    /// <summary>
+    /// 牵引系统状态报文接收状态
+    /// HasRecvd - 已收到牵引控制系统对上一次DCS状态报文响应的报文
+    /// NoRecv - 没有收到牵引控制系统对上一次DCS状态报文响应的报文
+    /// </summary>
+    public enum MCUStatusMessageRecvStatusEnum : byte
+    {
+        HasRecvd = 0x00,
+        NoRecv = 1,
+    }
+
+    /// <summary>
+    /// 与牵引状态改变就绪有关的请求
+    /// None - 无与就绪信息有关的请求
+    /// Delete - 删除牵引状态改变就绪信息
+    /// </summary>
+    public enum RequestForMCUStatusChangeReadyEnum : byte
+    {
+        None = 1 << 0,
+        Delete = 1 << 1,
+    }
+
+    /// <summary>
+    /// 悬浮/落下命令处理状态
+    /// UnDefined - 未定义/MOCS未发出命令
+    /// Suspend - MOCS发出悬浮架悬浮命令并正在处理中
+    /// Standstill - MOCS发出悬浮架落下命令并正在处理中
+    /// </summary>
+    public enum MaglevFrameSuspendDropCommandStatusEnum : byte
+    {
+        UnDefined = 0x00,
+        Suspend = 1 << 0,
+        Standstill = 1 << 1,
+    }
+
+    /// <summary>
+    /// 悬浮架悬浮/落下状态
+    /// UnDefined - 未定义
+    /// Standstill - 悬浮架安全的处于standstill（落下）
+    /// Suspending - 悬浮架未悬浮
+    /// Suspended - 悬浮架已悬浮
+    /// </summary>
+    public enum MaglevFrameSuspendDropStatusEnum : byte
+    {
+        UnDefined = 0x00,
+        Standstill = 1 << 2,
+        Suspending = 1 << 3,
+        Suspended = 1 << 4,
+    }
+
+    /// <summary>
+    /// 期望速度的默认类型
+    /// </summary>
+    public enum ExpectedSpeedTypeEnum : byte
+    {
+        Direct = 0x00,
+        Percent = 0b_0000_0011,
+    }
+
+    /// <summary>
+    /// 期望运行方向
+    /// </summary>
+    public enum ExpectedRunningDircetionEnum : byte
+    {
+        Same = 0x00,
+        Oppsite = 0b_0011_0000,
+    }
+
+    /// <summary>
+    /// 系统诊断信息
+    /// </summary>
+    public enum DiagnosticInfoEnum : byte
+    {
+        None = 0x00,
+        Error = 1 << 0,
+        CanNotHandleResendRequest = 1 << 1,
+    }
+    #endregion
 }

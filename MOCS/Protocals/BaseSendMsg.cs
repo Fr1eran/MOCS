@@ -20,7 +20,7 @@ namespace MOCS.Protocals
             {
                 throw new InvalidOperationException("用户数据段长度必须为偶数！");
             }
-            int totalLength = 8 + payloadLength + 2;
+            int totalLength = 8 + payloadLength;
             byte[] buffer = new byte[totalLength];
             var span = buffer.AsSpan();
 
@@ -32,11 +32,7 @@ namespace MOCS.Protocals
             span[5] = Source;
             span[6] = PartId;
             span[7] = MsgId;
-            UserData.Span.CopyTo(span.Slice(8));
-
-            // 计算并写入CRC
-            ushort crc = CRC16CCITT.Compute(span[..^2]);
-            BinaryPrimitives.WriteUInt16LittleEndian(span[^2..], crc);
+            UserData.Span.CopyTo(span[8..]);
 
             return buffer;
         }

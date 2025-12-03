@@ -1,6 +1,10 @@
 using System;
 using System.Net;
+using MOCS.Coms;
+using MOCS.Protocals;
+using MOCS.Protocals.VehicleControl.VehicleToMOCS;
 using MOCS.Utils;
+using NLog;
 using Stateless;
 
 namespace MOCS.Cores.MCU
@@ -55,13 +59,12 @@ namespace MOCS.Cores.MCU
 
         #endregion 面向界面层的公共接口
 
-        public MCUInterface(
-            IPAddress localIpAddress,
-            int localPort,
-            IPAddress remoteIpAddress,
-            int remotePort
-        )
+        public MCUInterface(ILogger syslogger, ILogger recvlogger, ILogger sendlogger)
         {
+            SysLogger = syslogger;
+            RecvLogger = recvlogger;
+            SendLogger = sendlogger;
+
             _mcuInterfaceSM = new StateMachine<MCUInterfaceState, MCUInterfaceTrigger>(
                 MCUInterfaceState.Stop
             );
@@ -85,6 +88,7 @@ namespace MOCS.Cores.MCU
             ConfigPCSMonitorStateMachine();
         }
 
+        #region 私有配置方法
         private void ConfigMCUInterfaceStateMachine()
         {
             _changeMCUStateTrigger = _mcuInterfaceSM.SetTriggerParameters<MCUStateChangeCommand>(
@@ -94,24 +98,32 @@ namespace MOCS.Cores.MCU
             // -----------停止状态-------------
             // 进入时，初始化和接口有关的所有状态
             // 启动事件触发时，转移至“未连接状态”
-            // 离开时，启动生命周期报文发送定时器
+            // 离开时，启动通信
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.Stop)
                 .OnEntry(InitStatus)
                 .Permit(MCUInterfaceTrigger.Activate, MCUInterfaceState.UnConnected)
-                .OnExit(t => ConfigureTimer(true, _mcuLifeCycleSendTimer));
+                .OnExit(BeginCommunicate);
 
             // -----------未连接状态-------------
             // 进入时，发送MOCS状态报文
             // 生命周期报文发送事件触发时，发送MOCS状态报文
             // 生命周期报文接收事件触发时，转移至“连接状态”
             // 关闭事件触发时，转移至“关闭状态”
+            // 离开时，如果目标状态为“关闭状态”，则停止通信
             _mcuInterfaceSM
                 .Configure(MCUInterfaceState.UnConnected)
                 .OnEntry(SendLifeCycleMessage)
                 .InternalTransition(MCUInterfaceTrigger.MOCSLifeCycleMsgSend, SendLifeCycleMessage)
                 .Permit(MCUInterfaceTrigger.MCULifeCycleMsgRecvd, MCUInterfaceState.Connected)
-                .Permit(MCUInterfaceTrigger.Deactivate, MCUInterfaceState.Stop);
+                .Permit(MCUInterfaceTrigger.Deactivate, MCUInterfaceState.Stop)
+                .OnExitAsync(async t =>
+                {
+                    if (t.Destination == MCUInterfaceState.Stop)
+                    {
+                        await StopCommunicate();
+                    }
+                });
 
             // -----------连接状态-------------
             // 进入时，启动生命周期报文接收超时定时器
@@ -132,7 +144,7 @@ namespace MOCS.Cores.MCU
                     () => IsLifeCycleRecTimeOutBeyondLimits
                 )
                 .Permit(MCUInterfaceTrigger.Deactivate, MCUInterfaceState.Stop)
-                .OnExit(t => ConfigureTimer(false, _mcuLifeCycleRecTimer));
+                .OnExitAsync(StopCommunicate);
 
             // -----------连接状态-------------
             // 配置为“连接状态”的子状态
@@ -282,6 +294,38 @@ namespace MOCS.Cores.MCU
                 .OnEntry(OnMCUStateHasChanged);
         }
 
+        private void ConfigureTimer(bool active, HighPrecisionTimer timer)
+        {
+            if (timer != null)
+            {
+                if (active)
+                {
+                    timer.Start();
+                }
+                else
+                {
+                    timer.Stop();
+                }
+            }
+        }
+
+        private void ConfigMsgParsers()
+        {
+            //_udpMsgSevice?.RegisterParser((byte)0x81, EMSStatusMsgA.Parse);
+            //_udpMsgSevice?.RegisterParser((byte)0x82, EMSStatusMsgB.Parse);
+            //_udpMsgSevice?.RegisterRangeParser((byte)0xE1, (byte)0xEF, VSPSStatusMsg.Parse);
+            //_udpMsgSevice?.RegisterRangeParser((byte)0xF1, (byte)0xFF, OBCStatusMsg.Parse);
+        }
+
+        private void ConfigMsgHandlers()
+        {
+            //_udpMsgSevice?.Subscribe<EMSStatusMsgA>(OnRecvEMSStatusMsgA);
+            //_udpMsgSevice?.Subscribe<EMSStatusMsgB>(OnRecvEMSStatusMsgB);
+            //_udpMsgSevice?.Subscribe<VSPSStatusMsg>(OnRecvVSPSStatusMsg);
+        }
+
+        #endregion
+
         private void InitStatus()
         {
             ConfigureTimer(false, _mcuLifeCycleSendTimer);
@@ -308,6 +352,35 @@ namespace MOCS.Cores.MCU
                     $"Current MCUInterface State: {_mcuInterfaceSM.State.ToString()} "
                         + $"cannot deal with trigger: {MCUInterfaceTrigger.MCUStateHasChanged.ToString()}"
                 );
+            }
+        }
+
+        private void OnMCUInterfaceSMTransition(
+            StateMachine<MCUInterfaceState, MCUInterfaceTrigger>.Transition transition
+        )
+        {
+            // Debug状态下输出状态转移过程中的原状态、触发器、目标状态信息
+#if DEBUG
+            var source = transition.Source.ToString();
+            var trigger = transition.Trigger.ToString();
+            var destination = transition.Destination.ToString();
+            var message = $"MCUInterface SM transition: {source} --({trigger})-> {destination}";
+            System.Diagnostics.Debug.WriteLine(message);
+#endif
+        }
+
+        #region 私有改变牵引状态方法
+
+        private void ActivateMCUStateChangeMonitior()
+        {
+            _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTriggers.Activate);
+        }
+
+        private void DeactivateMCUStateChangeMonitor()
+        {
+            if (_mcuStateChangeMonitorSM.CanFire(MCUStateChangeMonitorTriggers.Deactivate))
+            {
+                _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTriggers.Deactivate);
             }
         }
 
@@ -395,47 +468,34 @@ namespace MOCS.Cores.MCU
             _mcuDesState = MCUInterfaceState.Basic;
             ActivateMCUStateChangeMonitior();
         }
+        #endregion
 
-        private void OnMCUInterfaceSMTransition(
-            StateMachine<MCUInterfaceState, MCUInterfaceTrigger>.Transition transition
-        )
+
+        private void BeginCommunicate()
         {
-            // Debug状态下输出状态转移过程中的原状态、触发器、目标状态信息
-#if DEBUG
-            var source = transition.Source.ToString();
-            var trigger = transition.Trigger.ToString();
-            var destination = transition.Destination.ToString();
-            var message = $"MCUInterface SM transition: {source} --({trigger})-> {destination}";
-            System.Diagnostics.Debug.WriteLine(message);
-#endif
+            _udpMsgSevice = new UdpMessageService<BaseMessage>(
+                LocalIpAddress,
+                LocalPort,
+                RemoteIpAddress,
+                RemotePort,
+                RecvLogger,
+                SendLogger
+            );
+            ConfigMsgParsers();
+            ConfigMsgHandlers();
+            ConfigureTimer(true, _mcuLifeCycleSendTimer);
+            _udpMsgSevice.StartListening();
+            SysLogger.Info($"开始监听端口: {LocalPort}");
         }
 
-        private void ConfigureTimer(bool active, HighPrecisionTimer timer)
+        private async Task StopCommunicate()
         {
-            if (timer != null)
+            ConfigureTimer(false, _mcuLifeCycleSendTimer);
+            if (_udpMsgSevice != null)
             {
-                if (active)
-                {
-                    timer.Start();
-                }
-                else
-                {
-                    timer.Stop();
-                }
+                await _udpMsgSevice.DisposeAsync();
             }
-        }
-
-        private void ActivateMCUStateChangeMonitior()
-        {
-            _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTriggers.Activate);
-        }
-
-        private void DeactivateMCUStateChangeMonitor()
-        {
-            if (_mcuStateChangeMonitorSM.CanFire(MCUStateChangeMonitorTriggers.Deactivate))
-            {
-                _mcuStateChangeMonitorSM.Fire(MCUStateChangeMonitorTriggers.Deactivate);
-            }
+            SysLogger.Info($"停止监听端口: {LocalPort}");
         }
 
         private void MCULifeCycleSendTimeOut()
@@ -465,6 +525,11 @@ namespace MOCS.Cores.MCU
 
         private void SendDeleteTranmitMaximumCurveMsg() { }
 
+        public IPAddress LocalIpAddress { get; set; } = IPAddress.Parse("127.0.0.1");
+        public int LocalPort { get; set; } = 6002;
+        public IPAddress RemoteIpAddress { get; set; } = IPAddress.Parse("192.168.43.5");
+        public int RemotePort { get; set; } = 8008;
+
         private readonly StateMachine<MCUInterfaceState, MCUInterfaceTrigger> _mcuInterfaceSM;
         private readonly StateMachine<
             MCUStateChangeMonitorStates,
@@ -480,6 +545,13 @@ namespace MOCS.Cores.MCU
         private HighPrecisionTimer _mcuLifeCycleSendTimer;
         private HighPrecisionTimer _mcuLifeCycleRecTimer;
 
+        private UdpMessageService<BaseMessage>? _udpMsgSevice;
+
         private int _mcuLifeCycleRecTimeOutCounts = 0;
+
+        // 日志记录器
+        private readonly ILogger SysLogger;
+        private readonly ILogger RecvLogger;
+        private readonly ILogger SendLogger;
     }
 }

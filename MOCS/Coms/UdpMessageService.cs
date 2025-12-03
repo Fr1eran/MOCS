@@ -5,7 +5,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Accessibility;
 using MOCS.Protocals;
+using NLog;
 
 namespace MOCS.Coms
 {
@@ -25,6 +27,10 @@ namespace MOCS.Coms
         private Task? _receivingTask;
         private readonly object _sync = new();
 
+        // 日志记录器
+        private readonly ILogger _recvLogger;
+        private readonly ILogger _sendLogger;
+
         public IPEndPoint RemoteEndPoint { get; }
 
         public UdpMessageService(
@@ -32,6 +38,8 @@ namespace MOCS.Coms
             int localPort,
             IPAddress remoteIp,
             int remotePort,
+            ILogger recvLogger,
+            ILogger sendLogger,
             IMessageFactory<TBaseMsg>? messageFactory = null
         )
         {
@@ -39,6 +47,8 @@ namespace MOCS.Coms
             _receiver = new UdpClient(new IPEndPoint(localIp, localPort));
             RemoteEndPoint = new IPEndPoint(remoteIp, remotePort);
             _dispatcher = new MessageDispatcher();
+            _recvLogger = recvLogger;
+            _sendLogger = sendLogger;
             _messageFactory = messageFactory ?? new MessageFactory<TBaseMsg>();
         }
 
@@ -69,9 +79,19 @@ namespace MOCS.Coms
             where T : TBaseMsg, IOutgoingMsg
         {
             ArgumentNullException.ThrowIfNull(msg);
-            var payLoad = msg.ToByteArray();
-            var bytes = _messageFactory.ToTransmitByteArray(payLoad);
-            await _sender.SendAsync(bytes, bytes.Length, RemoteEndPoint);
+            try
+            {
+                var payLoad = msg.ToByteArray();
+                var bytes = _messageFactory.ToTransmitByteArray(payLoad);
+                await _sender.SendAsync(bytes, bytes.Length, RemoteEndPoint);
+                _sendLogger.Debug(
+                    $"发送成功 - 目标: {RemoteEndPoint.ToString()}, 类型: {typeof(T).Name}, 长度: {bytes.Length}字节, 数据: {BitConverter.ToString(bytes)}"
+                );
+            }
+            catch (Exception ex)
+            {
+                _sendLogger.Error(ex, $"发送失败 - 类型: {typeof(T).Name}");
+            }
         }
 
         public void StartListening()
@@ -131,11 +151,16 @@ namespace MOCS.Coms
                     var result = await _receiver.ReceiveAsync(token).ConfigureAwait(false);
                     if (_messageFactory.TryParseMessage(result.Buffer, out var msg, out var err))
                     {
+                        //_recvLogger.Debug(
+                        //    $"报文解析成功 - 来源: {result.RemoteEndPoint}, 原始报文: {BitConverter.ToString(result.Buffer)}"
+                        //);
                         await _dispatcher.Dispatch(msg).ConfigureAwait(false);
                     }
                     else
                     {
-                        // 记录报文解析错误信息
+                        _recvLogger.Warn(
+                            $"报文解析失败 - 来源: {result.RemoteEndPoint}, 错误信息: {err}, 原始报文: {BitConverter.ToString(result.Buffer)} "
+                        );
                     }
                 }
                 catch (OperationCanceledException)
@@ -144,7 +169,7 @@ namespace MOCS.Coms
                 }
                 catch (Exception ex)
                 {
-                    // 记录异常
+                    _recvLogger.Error(ex, "UDP接收报文时出现异常");
                 }
             }
         }

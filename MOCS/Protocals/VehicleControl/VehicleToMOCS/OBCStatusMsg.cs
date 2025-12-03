@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MOCS.Coms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
@@ -31,6 +32,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var src = span[5];
             var partId = span[6];
             var msgId = span[7];
+            SysWideLogger.Info($"收到VSPS状态报文, MsgID: {msgId:X2}");
 
             msg = new OBCStatusMsg
             {

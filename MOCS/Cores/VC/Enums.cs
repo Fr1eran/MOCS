@@ -281,13 +281,13 @@ namespace MOCS.Cores.VC
 
     #region EMS控制器控制帧
     /// <summary>
-    /// 列车方向
+    /// 悬浮架运行方向
     /// Invalid - 无效
     /// UpBound - 上行
     /// DownBound - 下行
     /// Error - 错误
     /// </summary>
-    enum TrainDirectionEnum : byte
+    public enum TrainDirectionEnum : byte
     {
         Invalid = 0b_1100_0000,
         UpBound = 1 << 7,
@@ -300,7 +300,7 @@ namespace MOCS.Cores.VC
     /// Activate - 牵引
     /// Deactivate - 未牵引
     /// </summary>
-    enum ETStatusEnum : byte
+    public enum ETStatusEnum : byte
     {
         Activate = 1 << 1,
         Deactivate = 0x00,
@@ -311,7 +311,7 @@ namespace MOCS.Cores.VC
     /// Activate - 制动
     /// Deactivte - 未制动
     /// </summary>
-    enum EBStatusEnum : byte
+    public enum EBStatusEnum : byte
     {
         Activate = 1,
         Deactivte = 0x00,
@@ -322,19 +322,19 @@ namespace MOCS.Cores.VC
     /// Energize - 线圈通电
     /// DeEnergize - 线圈断电
     /// </summary>
-    enum EMSCmdEnum : byte
+    public enum EMSCmdEnum : byte
     {
         Energize = 0x00,
         DeEnergize = 1 << 5,
     }
 
-    //enum BrakeCmdEnum : byte
-    //{
-    //    Max = 0b_1110_0000,
-    //    Min = 0b_0000_1111,
-    //}
+    enum BrakeLevelEnum : byte
+    {
+        Max = 7,
+        Min = 0,
+    }
 
-    enum CutCmdEnum : byte
+    public enum CutCmdEnum : byte
     {
         None = 0x00,
         Switch = 0b_0010_0000,

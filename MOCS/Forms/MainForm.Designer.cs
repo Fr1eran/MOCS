@@ -31,7 +31,7 @@ namespace MOCS
             splitContainer1 = new SplitContainer();
             groupBox3 = new GroupBox();
             groupBox6 = new GroupBox();
-            SysErrorRichTextBox = new RichTextBox();
+            SysDiagnosticRTB = new RichTextBox();
             groupBox5 = new GroupBox();
             panel2 = new Panel();
             StopMCUComButton = new Button();
@@ -56,9 +56,9 @@ namespace MOCS
             VCRecvPortTextBox = new TextBox();
             splitContainer2 = new SplitContainer();
             groupBox2 = new GroupBox();
-            RecvMsgRichTextBox = new RichTextBox();
+            RecvMsgRTB = new RichTextBox();
             groupBox1 = new GroupBox();
-            SendMsgRichTextBox = new RichTextBox();
+            SendMsgRTB = new RichTextBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -111,24 +111,24 @@ namespace MOCS
             // 
             // groupBox6
             // 
-            groupBox6.Controls.Add(SysErrorRichTextBox);
+            groupBox6.Controls.Add(SysDiagnosticRTB);
             groupBox6.Dock = DockStyle.Fill;
             groupBox6.Location = new Point(3, 377);
             groupBox6.Name = "groupBox6";
             groupBox6.Size = new Size(324, 70);
             groupBox6.TabIndex = 4;
             groupBox6.TabStop = false;
-            groupBox6.Text = "错误诊断";
+            groupBox6.Text = "诊断信息";
             // 
-            // SysErrorRichTextBox
+            // SysDiagnosticRTB
             // 
-            SysErrorRichTextBox.Dock = DockStyle.Fill;
-            SysErrorRichTextBox.Location = new Point(3, 23);
-            SysErrorRichTextBox.Name = "SysErrorRichTextBox";
-            SysErrorRichTextBox.ReadOnly = true;
-            SysErrorRichTextBox.Size = new Size(318, 44);
-            SysErrorRichTextBox.TabIndex = 0;
-            SysErrorRichTextBox.Text = "";
+            SysDiagnosticRTB.Dock = DockStyle.Fill;
+            SysDiagnosticRTB.Location = new Point(3, 23);
+            SysDiagnosticRTB.Name = "SysDiagnosticRTB";
+            SysDiagnosticRTB.ReadOnly = true;
+            SysDiagnosticRTB.Size = new Size(318, 44);
+            SysDiagnosticRTB.TabIndex = 0;
+            SysDiagnosticRTB.Text = "";
             // 
             // groupBox5
             // 
@@ -397,7 +397,7 @@ namespace MOCS
             // 
             // groupBox2
             // 
-            groupBox2.Controls.Add(RecvMsgRichTextBox);
+            groupBox2.Controls.Add(RecvMsgRTB);
             groupBox2.Dock = DockStyle.Fill;
             groupBox2.Location = new Point(0, 0);
             groupBox2.Name = "groupBox2";
@@ -406,19 +406,19 @@ namespace MOCS
             groupBox2.TabStop = false;
             groupBox2.Text = "接收报文";
             // 
-            // RecvMsgRichTextBox
+            // RecvMsgRTB
             // 
-            RecvMsgRichTextBox.Dock = DockStyle.Fill;
-            RecvMsgRichTextBox.Location = new Point(3, 23);
-            RecvMsgRichTextBox.Name = "RecvMsgRichTextBox";
-            RecvMsgRichTextBox.ReadOnly = true;
-            RecvMsgRichTextBox.Size = new Size(460, 318);
-            RecvMsgRichTextBox.TabIndex = 0;
-            RecvMsgRichTextBox.Text = "";
+            RecvMsgRTB.Dock = DockStyle.Fill;
+            RecvMsgRTB.Location = new Point(3, 23);
+            RecvMsgRTB.Name = "RecvMsgRTB";
+            RecvMsgRTB.ReadOnly = true;
+            RecvMsgRTB.Size = new Size(460, 318);
+            RecvMsgRTB.TabIndex = 0;
+            RecvMsgRTB.Text = "";
             // 
             // groupBox1
             // 
-            groupBox1.Controls.Add(SendMsgRichTextBox);
+            groupBox1.Controls.Add(SendMsgRTB);
             groupBox1.Dock = DockStyle.Fill;
             groupBox1.Location = new Point(0, 0);
             groupBox1.Name = "groupBox1";
@@ -427,15 +427,15 @@ namespace MOCS
             groupBox1.TabStop = false;
             groupBox1.Text = "发送报文";
             // 
-            // SendMsgRichTextBox
+            // SendMsgRTB
             // 
-            SendMsgRichTextBox.Dock = DockStyle.Fill;
-            SendMsgRichTextBox.Location = new Point(3, 23);
-            SendMsgRichTextBox.Name = "SendMsgRichTextBox";
-            SendMsgRichTextBox.ReadOnly = true;
-            SendMsgRichTextBox.Size = new Size(460, 76);
-            SendMsgRichTextBox.TabIndex = 0;
-            SendMsgRichTextBox.Text = "";
+            SendMsgRTB.Dock = DockStyle.Fill;
+            SendMsgRTB.Location = new Point(3, 23);
+            SendMsgRTB.Name = "SendMsgRTB";
+            SendMsgRTB.ReadOnly = true;
+            SendMsgRTB.Size = new Size(460, 76);
+            SendMsgRTB.TabIndex = 0;
+            SendMsgRTB.Text = "";
             // 
             // MainForm
             // 
@@ -476,8 +476,8 @@ namespace MOCS
         private SplitContainer splitContainer2;
         private GroupBox groupBox1;
         private GroupBox groupBox2;
-        private RichTextBox RecvMsgRichTextBox;
-        private RichTextBox SendMsgRichTextBox;
+        private RichTextBox RecvMsgRTB;
+        private RichTextBox SendMsgRTB;
         private TableLayoutPanel tableLayoutPanel1;
         private Label label1;
         private GroupBox groupBox3;
@@ -502,6 +502,6 @@ namespace MOCS
         private TextBox MCURecvPortTextBox;
         private Label label6;
         private GroupBox groupBox6;
-        private RichTextBox SysErrorRichTextBox;
+        private RichTextBox SysDiagnosticRTB;
     }
 }
