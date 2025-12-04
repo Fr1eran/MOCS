@@ -12,15 +12,9 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
 {
     public class OBCMsg : BaseSendMsg, IIncomingMsg<BaseMessage>
     {
-        private ReadOnlyMemory<byte> _userData;
-        public override ReadOnlyMemory<byte> UserData
-        {
-            get => this._userData;
-            set { this._userData = ToUserData(value); }
-        }
-
         public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
         {
+            SysWideLogger.Debug("收到OBC状态报文");
             OBCMsg? msg = null;
             string? error = null;
 
@@ -39,7 +33,6 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             var src = span[5];
             var partId = span[6];
             var msgId = span[7];
-            SysWideLogger.Info($"收到VSPS状态报文, MsgID: {msgId:X2}");
 
             msg = new OBCMsg
             {
@@ -53,16 +46,6 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
             };
 
             return (msg, error);
-        }
-
-        private static readonly byte PaddingBytesNum = 1;
-
-        private static ReadOnlyMemory<byte> ToUserData(ReadOnlyMemory<byte> buffer)
-        {
-            var result = new byte[buffer.Length + PaddingBytesNum];
-            buffer.CopyTo(result);
-            result[buffer.Length] = 0x00;
-            return result;
         }
     }
 }

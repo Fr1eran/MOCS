@@ -55,6 +55,8 @@ namespace MOCS.Cores.VCU
         /// </summary>
         public byte BrakeLevel { get; set; } = 0;
 
+        private static readonly byte UserDataBytesNum = 14;
+
         public byte[] ToBytesArray()
         {
             BitArray cmd = new BitArray(40);
@@ -91,7 +93,7 @@ namespace MOCS.Cores.VCU
             cmd[31] = (BrakeLevel & (1 << 1)) != 0;
             cmd[32] = (BrakeLevel & (1 << 2)) != 0;
 
-            byte[] result = new byte[8];
+            byte[] result = new byte[UserDataBytesNum];
             cmd.CopyTo(result, 0);
             return result;
         }

@@ -63,7 +63,7 @@ namespace MOCS.Cores.VC
         /// </summary>
         public byte ControllerId { get; set; }
 
-        public readonly byte[] ToCANMsg()
+        public byte[] ToCANMsg()
         {
             Span<byte> data = stackalloc byte[8];
 
@@ -83,7 +83,7 @@ namespace MOCS.Cores.VC
             data[4] = (byte)((BrakeLevel << 5) | ControllerId);
 
             // 距离（双字节，大端序）
-            BinaryPrimitives.WriteUInt16BigEndian(data[5..7], Distance);
+            BinaryPrimitives.WriteUInt16BigEndian(data.Slice(5, 2), Distance);
 
             // 切除命令（高3位） | 控制器编号（低5位）
             data[7] = (byte)((byte)CutCmd | ControllerId);

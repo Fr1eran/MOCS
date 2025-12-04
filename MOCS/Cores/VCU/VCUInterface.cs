@@ -73,9 +73,6 @@ namespace MOCS.Cores.VC
             {
                 VSPSInfoCollection[i] = default;
             }
-
-            // 初始化OBC控制命令
-            OBCControl = new OBCControlStruct();
         }
 
         #region 私有配置方法
@@ -100,7 +97,7 @@ namespace MOCS.Cores.VC
             _udpMsgSevice?.RegisterParser((byte)0x81, EMSStatusMsgA.Parse);
             _udpMsgSevice?.RegisterParser((byte)0x82, EMSStatusMsgB.Parse);
             _udpMsgSevice?.RegisterParser((byte)0xE1, VSPSStatusMsg.Parse);
-            _udpMsgSevice?.RegisterRangeParser((byte)0xF1, (byte)0xFF, OBCMsg.Parse);
+            _udpMsgSevice?.RegisterParser((byte)0xF1, OBCMsg.Parse);
         }
 
         private void ConfigMsgHandlers()
@@ -171,7 +168,12 @@ namespace MOCS.Cores.VC
         private async Task SendEMSControlMsgAsync()
         {
             var sequenceNum = _sequenceManager.GetNextSequence(PacketCategory.C);
-            EMSControlMsg msg = new() { SequenceNumber = sequenceNum, MsgId = 0x21 };
+            EMSControlMsg msg = new()
+            {
+                SequenceNumber = sequenceNum,
+                MsgId = 0x21,
+                UserData = EMSControl.ToCANMsg(),
+            };
             if (_udpMsgSevice != null)
             {
                 await _udpMsgSevice.SendAsync(msg);
@@ -185,7 +187,7 @@ namespace MOCS.Cores.VC
             {
                 SequenceNumber = sequenceNum,
                 MsgId = 0x71,
-                UserData = OBCControl?.ToBytesArray(),
+                UserData = OBCControl.ToBytesArray(),
             };
             if (_udpMsgSevice != null)
             {
@@ -315,7 +317,8 @@ namespace MOCS.Cores.VC
         public byte VSPSNums { get; } = 2;
         public VSPSInfoArray VSPSInfoCollection;
 
-        public OBCControlStruct? OBCControl { get; set; }
+        public EMSControlStruct EMSControl { get; set; } = new EMSControlStruct();
+        public OBCControlStruct OBCControl { get; set; } = new OBCControlStruct();
 
         // 日志记录器
         private readonly ILogger SysLogger;
