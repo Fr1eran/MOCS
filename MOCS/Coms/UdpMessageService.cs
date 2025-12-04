@@ -151,9 +151,6 @@ namespace MOCS.Coms
                     var result = await _receiver.ReceiveAsync(token).ConfigureAwait(false);
                     if (_messageFactory.TryParseMessage(result.Buffer, out var msg, out var err))
                     {
-                        //_recvLogger.Debug(
-                        //    $"报文解析成功 - 来源: {result.RemoteEndPoint}, 原始报文: {BitConverter.ToString(result.Buffer)}"
-                        //);
                         await _dispatcher.Dispatch(msg).ConfigureAwait(false);
                     }
                     else

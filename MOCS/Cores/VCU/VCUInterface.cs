@@ -1,8 +1,6 @@
 using System.Buffers.Binary;
 using System.Net;
-using System.Runtime.CompilerServices;
 using MOCS.Coms;
-using MOCS.Cores.VCU;
 using MOCS.Protocals;
 using MOCS.Protocals.VehicleControl.MOCSToVehicle;
 using MOCS.Protocals.VehicleControl.VehicleToMOCS;
@@ -10,7 +8,7 @@ using MOCS.Utils;
 using NLog;
 using Stateless;
 
-namespace MOCS.Cores.VC
+namespace MOCS.Cores.VCU
 {
     /// <summary>
     /// 车载控制器接口类
@@ -54,26 +52,27 @@ namespace MOCS.Cores.VC
             ConfigVCInterfaceStateMachine();
         }
 
-        private void Init()
+        #region 重置和UI控件有绑定的信息
+        private void RestoreAll()
         {
-            // 初始化LCU状态集合
-            for (int i = 0; i < LCUNums - 1; i++)
+            // 重置LCU状态集合
+            for (int i = 0; i < LCUNum - 1; i++)
             {
-                LCUStatusCollection[i] = default;
+                LCUStatusCollection[i].Reset();
             }
 
-            // 初始化GCU状态集合
-            for (int i = 0; i < GCUNums - 1; i++)
+            // 重置GCU状态集合
+            for (int i = 0; i < GCUNum - 1; i++)
             {
-                GCUStatusCollection[i] = default;
+                GCUStatusCollection[i].Reset();
             }
 
-            // 初始化VSPS信息集合
-            for (int i = 0; i < VSPSNums - 1; i++)
-            {
-                VSPSInfoCollection[i] = default;
-            }
+            VSPSInfoCollection.Reset();
+
+            EMSControlField.Reset();
+            OBCControlField.Reset();
         }
+        #endregion
 
         #region 私有配置方法
 
@@ -81,7 +80,7 @@ namespace MOCS.Cores.VC
         {
             _vcInterfaceSM
                 .Configure(VCInterfaceState.Stop)
-                .OnEntry(Init)
+                .OnEntryFrom(VCInterfaceTrigger.Deactivate, RestoreAll)
                 .Permit(VCInterfaceTrigger.Activate, VCInterfaceState.Running)
                 .OnExit(BeginCommunicate);
 
@@ -94,10 +93,10 @@ namespace MOCS.Cores.VC
 
         private void ConfigMsgParsers()
         {
-            _udpMsgSevice?.RegisterParser((byte)0x81, EMSStatusMsgA.Parse);
-            _udpMsgSevice?.RegisterParser((byte)0x82, EMSStatusMsgB.Parse);
-            _udpMsgSevice?.RegisterParser((byte)0xE1, VSPSStatusMsg.Parse);
-            _udpMsgSevice?.RegisterParser((byte)0xF1, OBCMsg.Parse);
+            _udpMsgSevice?.RegisterParser(0x81, EMSStatusMsgA.Parse);
+            _udpMsgSevice?.RegisterParser(0x82, EMSStatusMsgB.Parse);
+            _udpMsgSevice?.RegisterParser(0xE1, VSPSStatusMsg.Parse);
+            _udpMsgSevice?.RegisterParser(0xF1, OBCMsg.Parse);
         }
 
         private void ConfigMsgHandlers()
@@ -105,6 +104,7 @@ namespace MOCS.Cores.VC
             _udpMsgSevice?.Subscribe<EMSStatusMsgA>(OnRecvEMSStatusMsgA);
             _udpMsgSevice?.Subscribe<EMSStatusMsgB>(OnRecvEMSStatusMsgB);
             _udpMsgSevice?.Subscribe<VSPSStatusMsg>(OnRecvVSPSStatusMsg);
+            _udpMsgSevice?.Subscribe<OBCMsg>(OnRecvOBCStatusMsg);
         }
 
         private void ConfigureTimer(bool active, HighPrecisionTimer timer)
@@ -172,7 +172,7 @@ namespace MOCS.Cores.VC
             {
                 SequenceNumber = sequenceNum,
                 MsgId = 0x21,
-                UserData = EMSControl.ToCANMsg(),
+                UserData = EMSControlField.ToCANMsg(),
             };
             if (_udpMsgSevice != null)
             {
@@ -187,7 +187,7 @@ namespace MOCS.Cores.VC
             {
                 SequenceNumber = sequenceNum,
                 MsgId = 0x71,
-                UserData = OBCControl.ToBytesArray(),
+                UserData = OBCControlField.ToBytesArray(),
             };
             if (_udpMsgSevice != null)
             {
@@ -200,101 +200,101 @@ namespace MOCS.Cores.VC
 
         private void OnRecvEMSStatusMsgA(EMSStatusMsgA msg)
         {
-            if (msg.Destination != 0x01)
+            EMSStatus EMS;
+            var CANID = msg.UserData.Span[0];
+            if (CANID >= 0x21 && CANID <= 0x20 + LCUNum)
             {
-                // 目标MOCS编号与当前MOCS编号不一致
+                var index = (byte)(CANID - 0x21);
+                EMS = LCUStatusCollection[index];
+            }
+            else if (CANID >= 0x41 && CANID <= 0x40 + GCUNum)
+            {
+                var index = (byte)(CANID - 0x41);
+                EMS = GCUStatusCollection[index];
+            }
+            else
+            {
+                // EMS状态帧ID不合法
                 return;
             }
-
-            var EMSId = msg.PartId;
-            if (EMSId < 0x01 | EMSId > LCUNums)
-            {
-                // 悬浮控制器标识号超出范围
-                return;
-            }
-
-            var CANData = msg.UserData.Span;
-            ref EMSStatusStruct EMS = ref LCUStatusCollection[EMSId];
-            EMS.GapSensorsStatus = (GapSensorsStatusEnum)(CANData[0] & (byte)0xE0);
-            EMS.EMSCmd = (EMSCmdStatusEnum)(CANData[0] & (byte)0x10);
-            EMS.Life = (byte)(CANData[0] & (byte)0x0F);
-            EMS.EMSSysStatus = (EMSSysStatusEnum)(CANData[1] & (byte)0x80);
-            EMS.OverloadStatus = (OverloadStatusEnum)(CANData[1] & (byte)0x40);
-            EMS.AccSensorsStatus = (AccSensorsStatusEnum)(CANData[1] & (byte)0x30);
-            EMS.EMSOperationStatus = (EMSOperationStatusEnum)(CANData[1] & (byte)0x08);
-            EMS.EMSWarning = (EMSWarningEnum)(CANData[1] & (byte)0x04);
-            EMS.EMSFaultStatus = (EMSFaultStatusEnum)(CANData[1] & (byte)0x03);
-            EMS.KM2Status = (KMStatusEnum)(CANData[2] & (byte)0x80);
-            EMS.Temp = CANData[2] & (byte)0x7F - 27;
-            EMS.KM1ContactStatus = (KMContactStatusEnum)(CANData[3] & (byte)0x80);
+            var CANData = msg.UserData.Span.Slice(1, 8);
+            EMS.GapSensorsStatus = (GapSensorsStatusEnum)(CANData[0] & 0xE0);
+            EMS.EMSCmd = (EMSCmdStatusEnum)(CANData[0] & 0x10);
+            EMS.Life = (byte)(CANData[0] & 0x0F);
+            EMS.EMSSysStatus = (EMSSysStatusEnum)(CANData[1] & 0x80);
+            EMS.OverloadStatus = (OverloadStatusEnum)(CANData[1] & 0x40);
+            EMS.AccSensorsStatus = (AccSensorsStatusEnum)(CANData[1] & 0x30);
+            EMS.EMSOperationStatus = (EMSOperationStatusEnum)(CANData[1] & 0x08);
+            EMS.EMSWarning = (EMSWarningEnum)(CANData[1] & 0x04);
+            EMS.EMSFaultStatus = (EMSFaultStatusEnum)(CANData[1] & 0x03);
+            EMS.KM2Status = (KMStatusEnum)(CANData[2] & 0x80);
+            EMS.Temp = CANData[2] & 0x7F - 27;
+            EMS.KM1ContactStatus = (KMContactStatusEnum)(CANData[3] & 0x80);
             // y = (20 / 127) * x
-            EMS.Gap = (float)((CANData[3] & (byte)0x7F) * 0.157480);
-            EMS.KM2ContactStatus = (KMContactStatusEnum)(CANData[4] & (byte)0x80);
+            EMS.Gap = (float)((CANData[3] & 0x7F) * 0.157480);
+            EMS.KM2ContactStatus = (KMContactStatusEnum)(CANData[4] & 0x80);
             // y = (530 / 127) * x
-            EMS.U = (float)((CANData[4] & (byte)0x7F) * 4.173228);
-            EMS.CPUStatus = (CPUStatusEnum)(CANData[5] & (byte)(0x80));
+            EMS.U = (float)((CANData[4] & 0x7F) * 4.173228);
+            EMS.CPUStatus = (CPUStatusEnum)(CANData[5] & 0x80);
             // y = (160 / 127) * x
-            EMS.I1 = (float)((CANData[5] & (byte)0x7F) * 1.259842);
-            EMS.KM1Status = (KMStatusEnum)(CANData[6] & (byte)0x80);
+            EMS.I1 = (float)((CANData[5] & 0x7F) * 1.259842);
+            EMS.KM1Status = (KMStatusEnum)(CANData[6] & 0x80);
             // y = (100 / 127) * x - 50
-            EMS.Acc = (float)((CANData[6] & (byte)0x7F) * 0.7874016 - 50.0);
-            EMS.BrakeStatus = (BrakeStatusEnum)(CANData[7] & (byte)0x20);
-            EMS.SysSwitchStatus = (SysSwitchStatusEnum)(CANData[7] & (byte)0x10);
-            EMS.GapWarnningStatus = (GapWarnningStatusEnum)(CANData[7] & (byte)0x08);
-            EMS.OverloadWarningStatus = (OverloadWarningStatusEnum)(CANData[7] & (byte)0x04);
-            EMS.StabilityStatus = (StabilityStatusEnum)(CANData[7] & (byte)0x02);
-            EMS.CutStatus = (CutStatusEnum)(CANData[7] & (byte)0x01);
+            EMS.Acc = (float)((CANData[6] & 0x7F) * 0.7874016 - 50.0);
+            EMS.BrakeStatus = (BrakeStatusEnum)(CANData[7] & 0x20);
+            EMS.SysSwitchStatus = (SysSwitchStatusEnum)(CANData[7] & 0x10);
+            EMS.GapWarnningStatus = (GapWarnningStatusEnum)(CANData[7] & 0x08);
+            EMS.OverloadWarningStatus = (OverloadWarningStatusEnum)(CANData[7] & 0x04);
+            EMS.StabilityStatus = (StabilityStatusEnum)(CANData[7] & 0x02);
+            EMS.CutStatus = (CutStatusEnum)(CANData[7] & 0x01);
         }
 
         private void OnRecvEMSStatusMsgB(EMSStatusMsgB msg)
         {
-            if (msg.Destination != 0x01)
+            EMSStatus EMS;
+            var CANID = msg.UserData.Span[0];
+            if (CANID >= 0x61 && CANID <= 0x60 + LCUNum)
             {
-                // 目标MOCS编号与当前MOCS编号不一致
+                var index = (byte)(CANID - 0x61);
+                EMS = LCUStatusCollection[index];
+            }
+            else if (CANID >= 0x81 && CANID <= 0x80 + GCUNum)
+            {
+                var index = (byte)(CANID - 0x81);
+                EMS = GCUStatusCollection[index];
+            }
+            else
+            {
+                // EMS状态帧ID不合法
                 return;
             }
-
-            var EMSId = msg.PartId;
-            if (EMSId < 0x01 | EMSId > LCUNums)
-            {
-                // 悬浮控制器标识号超出范围
-                return;
-            }
-
-            var CANData = msg.UserData.Span;
-            ref EMSStatusStruct EMS = ref LCUStatusCollection[EMSId];
-            EMS.GapSensor1Status = (GapSensorStatusEnum)(CANData[1] & (byte)0x80);
-            EMS.Gap1 = (float)((CANData[1] & (byte)0x7F) * 0.157480);
-            EMS.GapSensor2Status = (GapSensorStatusEnum)(CANData[2] & (byte)0x80);
-            EMS.Gap2 = (float)((CANData[2] & (byte)0x7F) * 0.157480);
-            EMS.GapSensor3Status = (GapSensorStatusEnum)(CANData[3] & (byte)0x80);
-            EMS.Gap3 = (float)((CANData[3] & (byte)0x7F) * 0.157480);
-            EMS.GapSensor4Status = (GapSensorStatusEnum)(CANData[4] & (byte)0x80);
-            EMS.Gap4 = (float)((CANData[4] & (byte)0x7F) * 0.157480);
-            EMS.AccSensor1Status = (AccSensorStatusEnum)(CANData[5] & (byte)0x80);
-            EMS.Acc1 = (float)((CANData[5] & (byte)0x7F) * 0.7874016 - 50.0);
-            EMS.AccSensor2Status = (AccSensorStatusEnum)(CANData[6] & (byte)0x80);
-            EMS.Acc2 = (float)((CANData[6] & (byte)0x7F) * 0.7874016 - 50.0);
-            EMS.I2 = (float)((CANData[7] & (byte)0x7F) * 1.259842);
+            var CANData = msg.UserData.Span.Slice(1, 8);
+            EMS.GapSensor1Status = (GapSensorStatusEnum)(CANData[1] & 0x80);
+            EMS.Gap1 = (float)((CANData[1] & 0x7F) * 0.157480);
+            EMS.GapSensor2Status = (GapSensorStatusEnum)(CANData[2] & 0x80);
+            EMS.Gap2 = (float)((CANData[2] & 0x7F) * 0.157480);
+            EMS.GapSensor3Status = (GapSensorStatusEnum)(CANData[3] & 0x80);
+            EMS.Gap3 = (float)((CANData[3] & 0x7F) * 0.157480);
+            EMS.GapSensor4Status = (GapSensorStatusEnum)(CANData[4] & 0x80);
+            EMS.Gap4 = (float)((CANData[4] & 0x7F) * 0.157480);
+            EMS.AccSensor1Status = (AccSensorStatusEnum)(CANData[5] & 0x80);
+            EMS.Acc1 = (float)((CANData[5] & 0x7F) * 0.7874016 - 50.0);
+            EMS.AccSensor2Status = (AccSensorStatusEnum)(CANData[6] & 0x80);
+            EMS.Acc2 = (float)((CANData[6] & 0x7F) * 0.7874016 - 50.0);
+            EMS.I2 = (float)((CANData[7] & 0x7F) * 1.259842);
         }
 
         private void OnRecvVSPSStatusMsg(VSPSStatusMsg msg)
         {
-            var VSPSId = msg.PartId;
-            if (VSPSId < 0x01 | VSPSId > VSPSNums)
-            {
-                // 涡流传感定位测速系统标识号超出范围
-                return;
-            }
-
             var data = msg.UserData.Span;
-            // VSPSId 取值范围为 1~_VSPSNums，InlineArray 索引应为 0~(_VSPSNums-1)
-            ref VSPSInfoStruct VSPS = ref VSPSInfoCollection[VSPSId - 1];
-            VSPS.Life = data[0];
-            VSPS.Forward = data[1] == (byte)0x01;
-            VSPS.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
-            VSPS.Speed = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2));
+
+            VSPSInfoCollection.Life = data[0];
+            VSPSInfoCollection.Forward = data[1] == 0x01;
+            VSPSInfoCollection.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
+            VSPSInfoCollection.Speed = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2));
         }
+
+        private void OnRecvOBCStatusMsg(OBCMsg msg) { }
 
         #endregion
 
@@ -309,49 +309,20 @@ namespace MOCS.Cores.VC
 
         private readonly SequenceManager<ushort> _sequenceManager;
 
-        public byte LCUNums { get; } = 6;
-        public byte GCUNums { get; } = 6;
-        public LCUStatusArray LCUStatusCollection;
-        public GCUStatusArray GCUStatusCollection;
+        public static byte LCUNum { get; } = 6;
+        public static byte GCUNum { get; } = 6;
+        public EMSStatus[] LCUStatusCollection { get; } = new EMSStatus[LCUNum];
+        public EMSStatus[] GCUStatusCollection { get; } = new EMSStatus[GCUNum];
 
-        public byte VSPSNums { get; } = 2;
-        public VSPSInfoArray VSPSInfoCollection;
+        public static byte VSPSNums { get; } = 1;
+        public VSPSInfo VSPSInfoCollection { get; } = new();
 
-        public EMSControlStruct EMSControl { get; set; } = new EMSControlStruct();
-        public OBCControlStruct OBCControl { get; set; } = new OBCControlStruct();
+        public EMSControl EMSControlField { get; set; } = new EMSControl();
+        public OBCControl OBCControlField { get; set; } = new OBCControl();
 
         // 日志记录器
         private readonly ILogger SysLogger;
         private readonly ILogger RecvLogger;
         private readonly ILogger SendLogger;
-    }
-
-    // 声明内联数组，强制分配在栈上
-
-    /// <summary>
-    /// 悬浮控制器状态数组
-    /// </summary>
-    [InlineArray(6)]
-    public struct LCUStatusArray
-    {
-        private EMSStatusStruct _element0;
-    }
-
-    /// <summary>
-    /// 导向控制器状态数组
-    /// </summary>
-    [InlineArray(6)]
-    public struct GCUStatusArray
-    {
-        private EMSStatusStruct _element0;
-    }
-
-    /// <summary>
-    /// VSPS信息数组
-    /// </summary>
-    [InlineArray(2)]
-    public struct VSPSInfoArray
-    {
-        private VSPSInfoStruct _element0;
     }
 }

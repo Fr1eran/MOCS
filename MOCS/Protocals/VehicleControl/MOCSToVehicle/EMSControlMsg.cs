@@ -24,9 +24,6 @@ namespace MOCS.Protocals.VehicleControl.MOCSToVehicle
         /// </summary>
         private static readonly byte EMSControlCANMsgId = 0x55;
 
-        //public override ReadOnlyMemory<byte> UserData { get; set; } =
-        //    new byte[] { 0x55, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
         public ReadOnlyMemory<byte> _userData;
         public override ReadOnlyMemory<byte> UserData
         {

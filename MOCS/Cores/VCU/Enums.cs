@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MOCS.Cores.VC
+namespace MOCS.Cores.VCU
 {
     #region 车载控制器接口状态机
     public enum VCInterfaceState
@@ -334,6 +328,13 @@ namespace MOCS.Cores.VC
         Min = 0,
     }
 
+    /// <summary>
+    /// 切除命令
+    /// None - 无命令
+    /// Switch - 冗余控制系统切换（A 系统切换至 B 系统）
+    /// Cut - 切除
+    /// Reset - 复位
+    /// </summary>
     public enum CutCmdEnum : byte
     {
         None = 0x00,

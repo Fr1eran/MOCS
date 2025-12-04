@@ -1,67 +1,75 @@
-using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MOCS.Cores.VC
+namespace MOCS.Cores.VCU
 {
-    public struct EMSControlStruct
+    public class EMSControl
     {
         /// <summary>
         /// 悬浮架运行方向
         /// </summary>
-        public TrainDirectionEnum TrainDirection { get; set; }
+        public TrainDirectionEnum TrainDirection { get; set; } = TrainDirectionEnum.Invalid;
 
         /// <summary>
         /// 生命周期信号
         /// </summary>
-        public byte Life { get; set; }
+        public byte Life { get; set; } = 0;
 
         /// <summary>
         /// EMS控制命令
         /// </summary>
-        public EMSCmdEnum EMSCmd { get; set; }
+        public EMSCmdEnum EMSCmd { get; set; } = EMSCmdEnum.DeEnergize;
 
         /// <summary>
         /// 制动等级
         /// 0~7
         /// </summary>
         /// <remarks>组装成CAN帧时，需要左移5位</remarks>
-        public byte BrakeLevel { get; set; }
+        public byte BrakeLevel { get; set; } = 0;
 
         /// <summary>
         /// 电机牵引状态
         /// </summary>
-        public ETStatusEnum ETStatus { get; set; }
+        public ETStatusEnum ETStatus { get; set; } = ETStatusEnum.Deactivate;
 
         /// <summary>
         /// 电制动状态
         /// </summary>
-        public EBStatusEnum EBStatus { get; set; }
+        public EBStatusEnum EBStatus { get; set; } = EBStatusEnum.Deactivte;
 
         /// <summary>
         /// 列车速度, 单位: km/h
         /// </summary>
-        public byte Velocity { get; set; }
+        public byte Velocity { get; set; } = 0;
 
         /// <summary>
         /// 列车离站距离, 单位: m
         /// </summary>
         /// <remarks>组装成CAN帧时，按大端序</remarks>
-        public ushort Distance { get; set; }
+        public ushort Distance { get; set; } = 0;
 
         /// <summary>
         /// 切除命令
         /// </summary>
-        public CutCmdEnum CutCmd { get; set; }
+        public CutCmdEnum CutCmd { get; set; } = CutCmdEnum.None;
 
         /// <summary>
         /// EMS控制器编号
         /// </summary>
-        public byte ControllerId { get; set; }
+        public byte ControllerId { get; set; } = 0;
+
+        public void Reset()
+        {
+            TrainDirection = TrainDirectionEnum.Invalid;
+            Life = 0;
+            EMSCmd = EMSCmdEnum.DeEnergize;
+            BrakeLevel = 0;
+            ETStatus = ETStatusEnum.Deactivate;
+            EBStatus = EBStatusEnum.Deactivte;
+            Velocity = 0;
+            Distance = 0;
+            CutCmd = CutCmdEnum.None;
+            ControllerId = 0;
+        }
 
         public byte[] ToCANMsg()
         {
@@ -80,7 +88,7 @@ namespace MOCS.Cores.VC
             data[3] = (byte)((byte)EMSCmd | ControllerId);
 
             // 制动等级（高3位） | 控制器编号（低5位）
-            data[4] = (byte)((BrakeLevel << 5) | ControllerId);
+            data[4] = (byte)(BrakeLevel << 5 | ControllerId);
 
             // 距离（双字节，大端序）
             BinaryPrimitives.WriteUInt16BigEndian(data.Slice(5, 2), Distance);

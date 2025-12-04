@@ -1,6 +1,6 @@
 using System.Net;
 using MOCS.Cores.MCU;
-using MOCS.Cores.VC;
+using MOCS.Cores.VCU;
 using NLog;
 
 namespace MOCS

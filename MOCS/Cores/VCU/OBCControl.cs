@@ -1,14 +1,8 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MOCS.Cores.VC;
 
 namespace MOCS.Cores.VCU
 {
-    public class OBCControlStruct
+    public class OBCControl
     {
         /// <summary>
         /// 是否切换远程模式
@@ -54,6 +48,19 @@ namespace MOCS.Cores.VCU
         /// 制动等级
         /// </summary>
         public byte BrakeLevel { get; set; } = 0;
+
+        public void Reset()
+        {
+            IsRemoteModeActivate = false;
+            IsEmergencyStop = false;
+            IsBatteryEnable = false;
+            IsPowerSwitchClose = false;
+            IsPantographExtend = false;
+            IsLeviateActivate = false;
+            IsGuideActivate = false;
+            IsEmergencyModeActivate = false;
+            BrakeLevel = 0;
+        }
 
         private static readonly byte UserDataBytesNum = 14;
 
