@@ -1,3 +1,5 @@
+using MOCS.Cores.VCU;
+using MOCS.Forms;
 using NLog;
 
 namespace MOCS
@@ -14,7 +16,6 @@ namespace MOCS
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new MainForm());
-            //Application.Run(new VSPSMS()); //VSPSMS作为主窗口打开
         }
     }
 }

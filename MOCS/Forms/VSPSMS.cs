@@ -11,55 +11,60 @@ using System.Windows.Forms;
 
 namespace MOCS.Forms
 {
-    public partial class VSPSMS : Form //warning！使用public还是private？
+    public partial class VSPSMS : Form 
     {
-        public VSPSInfo _vspsInfo = new VSPSInfo();
-        public VSPSMS()
+        public VCUInterface _vcuInterface;
+        public VSPSMS(VCUInterface vcuInterface)
         {
+            _vcuInterface = vcuInterface; 
             InitializeComponent();
             this.Load += VSPSMS_Load;
         }
 
         private void VSPSMS_Load(object sender, EventArgs e)
         {
-            // 绑定“生命信号”到txtLife
-            textLife.DataBindings.Add("Text", _vspsInfo, nameof(VSPSInfo.Life));
+            textLife.DataBindings.Clear();
+            textForward.DataBindings.Clear();
+            textRelativePos.DataBindings.Clear();
+            textSpeed.DataBindings.Clear();
 
-            // 绑定“运行方向”（bool转文本：true→正向，false→反向）
+            textLife.DataBindings.Add("Text", _vcuInterface.VSPSInfoCollection, nameof(VSPSInfo.Life));
+
+
             textForward.DataBindings.Add(
-                "Text",//控件属性
-                _vspsInfo,//绑定源
-                nameof(VSPSInfo.Forward),//源属性
-                true,                    // formattingEnabled（是否启用格式化）
-                DataSourceUpdateMode.OnPropertyChanged, // 数据源更新模式
-                null,//空值时显示内容
-                "{0:正向;反向}"//格式字符串
+                "Text",
+                _vcuInterface.VSPSInfoCollection,
+                nameof(VSPSInfo.Forward),
+                true,
+                DataSourceUpdateMode.OnPropertyChanged,
+                null,
+                "{0:正向;反向}"
             );
 
-            // 绑定“相对位置”（带单位mm）
+
             textRelativePos.DataBindings.Add(
-                "Text",//控件属性
-                _vspsInfo,//绑定源
-                nameof(VSPSInfo.RelativePos),//源属性
-                true,//是否格式化？
-                DataSourceUpdateMode.OnPropertyChanged, // 数据源更新模式
-                null,//空值时显示内容
-                "{0} mm"//格式字符串
+                "Text",
+                _vcuInterface.VSPSInfoCollection,
+                nameof(VSPSInfo.RelativePos),
+                true,
+                DataSourceUpdateMode.OnPropertyChanged,
+                null,
+                "{0} mm"
             );
 
-            // 绑定“速度”（带单位cm/s）
+
             textSpeed.DataBindings.Add(
-                "Text",//控件属性
-                _vspsInfo,//绑定源
-                nameof(VSPSInfo.Speed),//源属性
-                true,//是否格式化？
-                DataSourceUpdateMode.OnPropertyChanged, // 数据源更新模式
-                null,//空值时显示内容
-                "{0} cm/s"//格式字符串
+                "Text",
+                _vcuInterface.VSPSInfoCollection,
+                nameof(VSPSInfo.Speed),
+                true,
+                DataSourceUpdateMode.OnPropertyChanged,
+                null,
+                "{0} cm/s"
             );
         }
 
-        private void groupBox1_Enter(object sender, EventArgs e)
+            private void groupBox1_Enter(object sender, EventArgs e)
         {
 
         }
