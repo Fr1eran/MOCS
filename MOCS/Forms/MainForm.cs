@@ -28,6 +28,46 @@ namespace MOCS
                 ReceiveLogger = LogManager.GetLogger("ReceiveLogger");
 
                 VCIF = new VCUInterface(DiagnosticLogger, ReceiveLogger, SendLogger);
+
+                if (VCIF != null)
+                {
+                    textLife.DataBindings.Clear();
+                    textForward.DataBindings.Clear();
+                    textRelativePos.DataBindings.Clear();
+                    textSpeed.DataBindings.Clear();
+
+                    textLife.DataBindings.Add("Text", VCIF.VSPSInfoCollection, nameof(VSPSInfo.Life));
+
+                    textForward.DataBindings.Add(
+                        "Text",
+                        VCIF.VSPSInfoCollection,
+                        nameof(VSPSInfo.Forward),
+                        true,
+                        DataSourceUpdateMode.OnPropertyChanged,
+                        null,
+                        "正向;反向"
+                    );
+
+                    textRelativePos.DataBindings.Add(
+                        "Text",
+                        VCIF.VSPSInfoCollection,
+                        nameof(VSPSInfo.RelativePos),
+                        true,
+                        DataSourceUpdateMode.OnPropertyChanged,
+                        null,
+                        "{0} mm"
+                    );
+
+                    textSpeed.DataBindings.Add(
+                        "Text",
+                        VCIF.VSPSInfoCollection,
+                        nameof(VSPSInfo.Speed),
+                        true,
+                        DataSourceUpdateMode.OnPropertyChanged,
+                        null,
+                        "{0} cm/s"
+                    );
+                };
             };
         }
 
@@ -116,6 +156,11 @@ namespace MOCS
             {
                 await VCIF.StopAsync();
             }
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

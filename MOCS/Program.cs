@@ -1,3 +1,5 @@
+using MOCS.Cores.VCU;
+using MOCS.Forms;
 using NLog;
 
 namespace MOCS
