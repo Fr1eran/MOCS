@@ -50,7 +50,5 @@ namespace MOCS.Protocals
         /// </summary>
         /// <remarks>8字节报文帧固定数据段，用户数据段，2字节CRC</remarks>
         public byte LengthInWords => (byte)((8 + UserData.Length + 2) / 2);
-
-        public static Logger SysWideLogger = LogManager.GetLogger("SysWideLogger");
     }
 }

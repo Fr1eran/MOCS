@@ -14,16 +14,15 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
     {
         public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
         {
-            SysWideLogger.Debug("收到OBC状态报文");
             OBCMsg? msg = null;
             string? error = null;
 
             var span = buffer.Span;
 
-            var statusMsgLen = buffer.Length - 9;
-            if (statusMsgLen != 15)
+            var statusMsgLen = buffer.Length - 8;
+            if (statusMsgLen != 16)
             {
-                error = $"车载OBC的状态报文有用数据段长度:{statusMsgLen}不为15字节";
+                error = $"车载OBC的状态报文有用数据段长度:{statusMsgLen}不为16字节";
                 return (msg, error);
             }
 
@@ -42,7 +41,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 Source = src,
                 PartId = partId,
                 MsgId = msgId,
-                UserData = buffer.Slice(9, 15),
+                UserData = buffer.Slice(9, 16),
             };
 
             return (msg, error);
