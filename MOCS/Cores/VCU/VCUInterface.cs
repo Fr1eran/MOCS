@@ -295,6 +295,10 @@ namespace MOCS.Cores.VCU
             VSPSInfoCollection.Forward = data[3] == 0x01;
             VSPSInfoCollection.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2));
             VSPSInfoCollection.Speed = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(6, 2));
+
+            //SysLogger.Info($"方向: {VSPSInfoCollection.Forward}");
+            //SysLogger.Info($"相对位置: {VSPSInfoCollection.RelativePos}");
+            //SysLogger.Info($"速度: {VSPSInfoCollection.Speed}");
         }
 
         private void OnRecvOBCStatusMsg(OBCMsg msg)
