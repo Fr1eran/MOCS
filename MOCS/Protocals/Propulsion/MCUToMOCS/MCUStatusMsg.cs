@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MOCS.Coms;
 
 namespace MOCS.Protocals.Propulsion.MCUToMOCS
 {
@@ -29,12 +30,13 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         Response = 0,
         TimeOut = 1,
     }
+
     ///<summary>
     ///要重发以前MOCS（DCS）报文的数量
     ///</summary>
     public enum MCUStatus_RepeatMOCSMsgCount : byte
     {
-        None=0x00,
+        None = 0x00,
         Repeat1 = 0x01,
         Repeat2 = 0x02,
         Repeat3 = 0x03,
@@ -77,7 +79,6 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
     /// <summary>
     /// 牵引故障状态状态
     /// </summary>
-
     public enum MCUFaultStatus : byte
     {
         Fault0 = 0x01,
@@ -87,7 +88,14 @@ namespace MOCS.Protocals.Propulsion.MCUToMOCS
         UnDefine = 0xFF,
     }
 
-    public sealed class MCUStatusMsg : BaseMessage, IIncomingMsg
+    public sealed class MCUStatusMsg : BaseMessage, IIncomingMsg<BaseMessage>
     {
+        public static (BaseMessage? msg, string? error) Parse(ReadOnlyMemory<byte> buffer)
+        {
+            MCUStatusMsg? msg = null;
+            string? error = null;
+
+            return (msg, error);
+        }
     }
 }

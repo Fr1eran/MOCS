@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +9,6 @@ namespace MOCS.Protocals.Propulsion.MOCSToMCU
     /// <summary>
     /// 要求切换到的状态
     /// </summary>
-
     public enum StatusChangeTo : byte
     {
         MCUCurrentStatus = 0x00,
@@ -21,10 +20,7 @@ namespace MOCS.Protocals.Propulsion.MOCSToMCU
         PoweredTractionTest = 0x20,
         UnpoweredTractionTest = 0x40,
         SimulationRunning = 0x80,
-
     }
 
-    public sealed class TractionStatusChange : BaseSendMsg
-    {
-    }
+    public sealed class TractionStatusChange : BaseSendMsg { }
 }
