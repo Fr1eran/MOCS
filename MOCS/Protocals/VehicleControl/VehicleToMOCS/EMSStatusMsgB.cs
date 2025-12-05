@@ -46,7 +46,7 @@ namespace MOCS.Protocals.VehicleControl.VehicleToMOCS
                 Source = src,
                 PartId = partId,
                 MsgId = msgId,
-                UserData = buffer.Slice(9, 8),
+                UserData = buffer.Slice(8, 9),
             };
 
             return (msg, error);

@@ -4,9 +4,8 @@ namespace MOCS.Cores.VCU
     {
         /// <summary>
         /// 生命信号
-        /// 0-255
         /// </summary>
-        public byte Life { get; set; } = 0;
+        public ushort Life { get; set; } = 0;
 
         /// <summary>
         /// 方向

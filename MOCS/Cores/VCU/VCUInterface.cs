@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections;
 using System.Net;
 using MOCS.Coms;
 using MOCS.Protocals;
@@ -70,7 +71,9 @@ namespace MOCS.Cores.VCU
             VSPSInfoCollection.Reset();
 
             EMSControlField.Reset();
-            OBCControlField.Reset();
+            SendOBCControlField.Reset();
+            FeedBackOBCControlField.Reset();
+            OBCStatusField.Reset();
         }
         #endregion
 
@@ -187,7 +190,7 @@ namespace MOCS.Cores.VCU
             {
                 SequenceNumber = sequenceNum,
                 MsgId = 0x71,
-                UserData = OBCControlField.ToBytesArray(),
+                UserData = SendOBCControlField.ToBytesArray(),
             };
             if (_udpMsgSevice != null)
             {
@@ -288,13 +291,59 @@ namespace MOCS.Cores.VCU
         {
             var data = msg.UserData.Span;
 
-            VSPSInfoCollection.Life = data[0];
-            VSPSInfoCollection.Forward = data[1] == 0x01;
-            VSPSInfoCollection.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
-            VSPSInfoCollection.Speed = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2));
+            VSPSInfoCollection.Life = BinaryPrimitives.ReadUInt16BigEndian(data[..2]);
+            VSPSInfoCollection.Forward = data[3] == 0x01;
+            VSPSInfoCollection.RelativePos = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2));
+            VSPSInfoCollection.Speed = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(6, 2));
+
+            //SysLogger.Info($"方向: {VSPSInfoCollection.Forward}");
+            //SysLogger.Info($"相对位置: {VSPSInfoCollection.RelativePos}");
+            //SysLogger.Info($"速度: {VSPSInfoCollection.Speed}");
         }
 
-        private void OnRecvOBCStatusMsg(OBCMsg msg) { }
+        private void OnRecvOBCStatusMsg(OBCMsg msg)
+        {
+            var data = msg.UserData.Span;
+
+            var bits = new BitArray(data.Slice(0, 8).ToArray());
+
+            FeedBackOBCControlField.IsRemoteModeActivate = bits[1]; // 本地/远程切换（0：本地 1：远程）
+            FeedBackOBCControlField.IsEmergencyStop = bits[2]; // 急停（0：消失 1：发生）
+
+            FeedBackOBCControlField.IsBatteryEnable = bits[3]; // 电池启动（0：消失 1：发生）
+            FeedBackOBCControlField.IsPowerSwitchClose = bits[5]; // 电源合闸（0：消失 1：发生）
+            FeedBackOBCControlField.IsPantographExtend = bits[9]; // 受流器伸（0：消失 1：发生）
+            FeedBackOBCControlField.IsLeviateActivate = bits[11]; // 悬浮起浮（0：消失 1：发生）
+            FeedBackOBCControlField.IsGuideActivate = bits[12]; // 导向起浮（0：消失 1：发生）
+
+            FeedBackOBCControlField.IsEmergencyModeActivate = bits[16]; // 紧急模式切换（0：正常模式 1：紧急模式）
+
+            //FeedBackOBCControlField.IsBatteryEnable = bits[19]; // 电池启动（0：消失 1：发生）
+            //FeedBackOBCControlField.IsPowerSwitchClose = bits[21]; // 电源合闸（0：消失 1：发生）
+            //FeedBackOBCControlField.IsPantographExtend = bits[23]; // 受流器伸（0：消失 1：发生）
+            //FeedBackOBCControlField.IsLeviateActivate = bits[25]; // 悬浮起浮（0：消失 1：发生）
+            //FeedBackOBCControlField.IsGuideActivate = bits[26]; // 导向起浮（0：消失 1：发生）
+
+            OBCStatusField.Is440VBatterySwitchClosed = bits[49];
+            OBCStatusField.Is480VPowerSwitchClosed = bits[51];
+            OBCStatusField.IsDC330VCircuitBreakerEnabled = bits[53];
+            OBCStatusField.Is25kWPowerFailed = bits[54];
+            OBCStatusField.Is5kWPowerFailed = bits[55];
+            OBCStatusField.IsPantographEnergized = bits[56];
+            OBCStatusField.IsPantographExtended2 = bits[58];
+            OBCStatusField.IsPantographExtended1 = bits[60];
+            OBCStatusField.IsLeviated = bits[62];
+            OBCStatusField.IsGuideEnabled = bits[63];
+
+            OBCStatusField.Battery440VCapacity = BinaryPrimitives.ReadInt16BigEndian(
+                data.Slice(8, 2)
+            );
+            OBCStatusField.Battery110VCapacity = BinaryPrimitives.ReadInt16BigEndian(
+                data.Slice(10, 2)
+            );
+
+            FeedBackOBCControlField.BrakeLevel = data[^1];
+        }
 
         #endregion
 
@@ -311,14 +360,18 @@ namespace MOCS.Cores.VCU
 
         public static byte LCUNum { get; } = 6;
         public static byte GCUNum { get; } = 6;
-        public EMSStatus[] LCUStatusCollection { get; } = new EMSStatus[LCUNum];
-        public EMSStatus[] GCUStatusCollection { get; } = new EMSStatus[GCUNum];
+        public EMSStatus[] LCUStatusCollection { get; } =
+            new EMSStatus[] { new(), new(), new(), new(), new(), new() };
+        public EMSStatus[] GCUStatusCollection { get; } =
+            new EMSStatus[] { new(), new(), new(), new(), new(), new() };
 
         public static byte VSPSNums { get; } = 1;
         public VSPSInfo VSPSInfoCollection { get; } = new();
 
         public EMSControl EMSControlField { get; set; } = new EMSControl();
-        public OBCControl OBCControlField { get; set; } = new OBCControl();
+        public OBCControl SendOBCControlField { get; set; } = new OBCControl();
+        public OBCControl FeedBackOBCControlField { get; set; } = new OBCControl();
+        public OBCStatus OBCStatusField { get; set; } = new OBCStatus();
 
         // 日志记录器
         private readonly ILogger SysLogger;
