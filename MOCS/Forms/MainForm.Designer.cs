@@ -487,6 +487,7 @@ namespace MOCS
             RecvMsgRTB.Size = new Size(701, 443);
             RecvMsgRTB.TabIndex = 0;
             RecvMsgRTB.Text = "";
+            RecvMsgRTB.TextChanged += RecvMsgRTB_TextChanged;
             // 
             // groupBox1
             // 

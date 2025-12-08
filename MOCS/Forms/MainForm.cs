@@ -162,5 +162,10 @@ namespace MOCS
         {
 
         }
+
+        private void RecvMsgRTB_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

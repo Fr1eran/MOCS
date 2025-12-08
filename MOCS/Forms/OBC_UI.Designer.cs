@@ -1,0 +1,363 @@
+﻿namespace MOCS.Forms
+{
+    partial class OBC_UI
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            menuStrip1 = new MenuStrip();
+            toolStripTextBox1 = new ToolStripTextBox();
+            toolStripTextBox2 = new ToolStripTextBox();
+            toolStripTextBox3 = new ToolStripTextBox();
+            toolStripTextBox4 = new ToolStripTextBox();
+            toolStripTextBox5 = new ToolStripTextBox();
+            toolStripTextBox6 = new ToolStripTextBox();
+            OBCpanel = new Panel();
+            OBCtabControl = new TabControl();
+            tabPage1 = new TabPage();
+            tabPage2 = new TabPage();
+            splitContainer1 = new SplitContainer();
+            groupBox1 = new GroupBox();
+            splitContainer2 = new SplitContainer();
+            groupBox2 = new GroupBox();
+            groupBox3 = new GroupBox();
+            richTextBox1 = new RichTextBox();
+            splitContainer3 = new SplitContainer();
+            groupBox4 = new GroupBox();
+            groupBox5 = new GroupBox();
+            richTextBox2 = new RichTextBox();
+            richTextBox3 = new RichTextBox();
+            menuStrip1.SuspendLayout();
+            OBCpanel.SuspendLayout();
+            OBCtabControl.SuspendLayout();
+            tabPage1.SuspendLayout();
+            tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
+            splitContainer1.Panel1.SuspendLayout();
+            splitContainer1.Panel2.SuspendLayout();
+            splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
+            splitContainer2.Panel1.SuspendLayout();
+            splitContainer2.Panel2.SuspendLayout();
+            splitContainer2.SuspendLayout();
+            groupBox3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
+            splitContainer3.Panel1.SuspendLayout();
+            splitContainer3.Panel2.SuspendLayout();
+            splitContainer3.SuspendLayout();
+            groupBox4.SuspendLayout();
+            groupBox5.SuspendLayout();
+            SuspendLayout();
+            // 
+            // menuStrip1
+            // 
+            menuStrip1.ImageScalingSize = new Size(32, 32);
+            menuStrip1.Items.AddRange(new ToolStripItem[] { toolStripTextBox1, toolStripTextBox2, toolStripTextBox3, toolStripTextBox4, toolStripTextBox5, toolStripTextBox6 });
+            menuStrip1.Location = new Point(0, 0);
+            menuStrip1.Name = "menuStrip1";
+            menuStrip1.Size = new Size(1894, 42);
+            menuStrip1.TabIndex = 0;
+            menuStrip1.Text = "menuStrip1";
+            // 
+            // toolStripTextBox1
+            // 
+            toolStripTextBox1.Name = "toolStripTextBox1";
+            toolStripTextBox1.Size = new Size(100, 38);
+            toolStripTextBox1.Text = "MOCS";
+            // 
+            // toolStripTextBox2
+            // 
+            toolStripTextBox2.Name = "toolStripTextBox2";
+            toolStripTextBox2.Size = new Size(100, 38);
+            toolStripTextBox2.Text = "MCU";
+            // 
+            // toolStripTextBox3
+            // 
+            toolStripTextBox3.Name = "toolStripTextBox3";
+            toolStripTextBox3.Size = new Size(100, 38);
+            toolStripTextBox3.Text = "LCU";
+            // 
+            // toolStripTextBox4
+            // 
+            toolStripTextBox4.Name = "toolStripTextBox4";
+            toolStripTextBox4.Size = new Size(100, 38);
+            toolStripTextBox4.Text = "GCU";
+            // 
+            // toolStripTextBox5
+            // 
+            toolStripTextBox5.Name = "toolStripTextBox5";
+            toolStripTextBox5.Size = new Size(100, 38);
+            toolStripTextBox5.Text = "VSPS";
+            // 
+            // toolStripTextBox6
+            // 
+            toolStripTextBox6.Name = "toolStripTextBox6";
+            toolStripTextBox6.Size = new Size(100, 38);
+            toolStripTextBox6.Text = "OBC";
+            // 
+            // OBCpanel
+            // 
+            OBCpanel.Controls.Add(OBCtabControl);
+            OBCpanel.Dock = DockStyle.Fill;
+            OBCpanel.Location = new Point(0, 42);
+            OBCpanel.Name = "OBCpanel";
+            OBCpanel.Size = new Size(1894, 967);
+            OBCpanel.TabIndex = 1;
+            // 
+            // OBCtabControl
+            // 
+            OBCtabControl.Alignment = TabAlignment.Bottom;
+            OBCtabControl.Controls.Add(tabPage1);
+            OBCtabControl.Controls.Add(tabPage2);
+            OBCtabControl.Dock = DockStyle.Fill;
+            OBCtabControl.Location = new Point(0, 0);
+            OBCtabControl.Name = "OBCtabControl";
+            OBCtabControl.SelectedIndex = 0;
+            OBCtabControl.Size = new Size(1894, 967);
+            OBCtabControl.TabIndex = 0;
+            OBCtabControl.SelectedIndexChanged += this.OBCtabControl_SelectedIndexChanged;
+            // 
+            // tabPage1
+            // 
+            tabPage1.Controls.Add(splitContainer1);
+            tabPage1.Location = new Point(8, 8);
+            tabPage1.Name = "tabPage1";
+            tabPage1.Padding = new Padding(3);
+            tabPage1.Size = new Size(1878, 914);
+            tabPage1.TabIndex = 0;
+            tabPage1.Text = "状态监视";
+            tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tabPage2
+            // 
+            tabPage2.Controls.Add(splitContainer3);
+            tabPage2.Location = new Point(8, 8);
+            tabPage2.Name = "tabPage2";
+            tabPage2.Padding = new Padding(3);
+            tabPage2.Size = new Size(1878, 914);
+            tabPage2.TabIndex = 1;
+            tabPage2.Text = "报文收发";
+            tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // splitContainer1
+            // 
+            splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.Location = new Point(3, 3);
+            splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            splitContainer1.Panel1.Controls.Add(groupBox1);
+            // 
+            // splitContainer1.Panel2
+            // 
+            splitContainer1.Panel2.Controls.Add(splitContainer2);
+            splitContainer1.Size = new Size(1872, 908);
+            splitContainer1.SplitterDistance = 1250;
+            splitContainer1.TabIndex = 1;
+            // 
+            // groupBox1
+            // 
+            groupBox1.BackColor = SystemColors.Window;
+            groupBox1.Dock = DockStyle.Fill;
+            groupBox1.Location = new Point(0, 0);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new Size(1250, 908);
+            groupBox1.TabIndex = 0;
+            groupBox1.TabStop = false;
+            groupBox1.Text = "状态信息";
+            // 
+            // splitContainer2
+            // 
+            splitContainer2.Dock = DockStyle.Fill;
+            splitContainer2.Location = new Point(0, 0);
+            splitContainer2.Name = "splitContainer2";
+            splitContainer2.Orientation = Orientation.Horizontal;
+            // 
+            // splitContainer2.Panel1
+            // 
+            splitContainer2.Panel1.Controls.Add(groupBox2);
+            // 
+            // splitContainer2.Panel2
+            // 
+            splitContainer2.Panel2.Controls.Add(groupBox3);
+            splitContainer2.Size = new Size(618, 908);
+            splitContainer2.SplitterDistance = 620;
+            splitContainer2.TabIndex = 0;
+            // 
+            // groupBox2
+            // 
+            groupBox2.BackColor = SystemColors.Window;
+            groupBox2.Dock = DockStyle.Fill;
+            groupBox2.Location = new Point(0, 0);
+            groupBox2.Name = "groupBox2";
+            groupBox2.Size = new Size(618, 620);
+            groupBox2.TabIndex = 0;
+            groupBox2.TabStop = false;
+            groupBox2.Text = "操作控制";
+            // 
+            // groupBox3
+            // 
+            groupBox3.BackColor = SystemColors.Window;
+            groupBox3.Controls.Add(richTextBox1);
+            groupBox3.Dock = DockStyle.Fill;
+            groupBox3.Location = new Point(0, 0);
+            groupBox3.Name = "groupBox3";
+            groupBox3.Size = new Size(618, 284);
+            groupBox3.TabIndex = 0;
+            groupBox3.TabStop = false;
+            groupBox3.Text = "诊断信息";
+            // 
+            // richTextBox1
+            // 
+            richTextBox1.BackColor = SystemColors.Control;
+            richTextBox1.Dock = DockStyle.Fill;
+            richTextBox1.Location = new Point(3, 34);
+            richTextBox1.Name = "richTextBox1";
+            richTextBox1.Size = new Size(612, 247);
+            richTextBox1.TabIndex = 0;
+            richTextBox1.Text = "";
+            // 
+            // splitContainer3
+            // 
+            splitContainer3.Dock = DockStyle.Fill;
+            splitContainer3.Location = new Point(3, 3);
+            splitContainer3.Name = "splitContainer3";
+            // 
+            // splitContainer3.Panel1
+            // 
+            splitContainer3.Panel1.Controls.Add(groupBox4);
+            // 
+            // splitContainer3.Panel2
+            // 
+            splitContainer3.Panel2.Controls.Add(groupBox5);
+            splitContainer3.Size = new Size(1872, 908);
+            splitContainer3.SplitterDistance = 945;
+            splitContainer3.TabIndex = 0;
+            // 
+            // groupBox4
+            // 
+            groupBox4.Controls.Add(richTextBox2);
+            groupBox4.Dock = DockStyle.Fill;
+            groupBox4.Location = new Point(0, 0);
+            groupBox4.Name = "groupBox4";
+            groupBox4.Size = new Size(945, 908);
+            groupBox4.TabIndex = 0;
+            groupBox4.TabStop = false;
+            groupBox4.Text = "接收报文";
+            // 
+            // groupBox5
+            // 
+            groupBox5.Controls.Add(richTextBox3);
+            groupBox5.Dock = DockStyle.Fill;
+            groupBox5.Location = new Point(0, 0);
+            groupBox5.Name = "groupBox5";
+            groupBox5.Size = new Size(923, 908);
+            groupBox5.TabIndex = 0;
+            groupBox5.TabStop = false;
+            groupBox5.Text = "发送报文";
+            // 
+            // richTextBox2
+            // 
+            richTextBox2.BackColor = SystemColors.Control;
+            richTextBox2.Dock = DockStyle.Fill;
+            richTextBox2.Location = new Point(3, 34);
+            richTextBox2.Name = "richTextBox2";
+            richTextBox2.Size = new Size(939, 871);
+            richTextBox2.TabIndex = 0;
+            richTextBox2.Text = "";
+            // 
+            // richTextBox3
+            // 
+            richTextBox3.BackColor = SystemColors.Control;
+            richTextBox3.Dock = DockStyle.Fill;
+            richTextBox3.Location = new Point(3, 34);
+            richTextBox3.Name = "richTextBox3";
+            richTextBox3.Size = new Size(917, 871);
+            richTextBox3.TabIndex = 0;
+            richTextBox3.Text = "";
+            // 
+            // OBC_UI
+            // 
+            AutoScaleDimensions = new SizeF(14F, 31F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1894, 1009);
+            Controls.Add(OBCpanel);
+            Controls.Add(menuStrip1);
+            MainMenuStrip = menuStrip1;
+            Name = "OBC_UI";
+            Text = "OBC";
+            menuStrip1.ResumeLayout(false);
+            menuStrip1.PerformLayout();
+            OBCpanel.ResumeLayout(false);
+            OBCtabControl.ResumeLayout(false);
+            tabPage1.ResumeLayout(false);
+            tabPage2.ResumeLayout(false);
+            splitContainer1.Panel1.ResumeLayout(false);
+            splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
+            splitContainer1.ResumeLayout(false);
+            splitContainer2.Panel1.ResumeLayout(false);
+            splitContainer2.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
+            splitContainer2.ResumeLayout(false);
+            groupBox3.ResumeLayout(false);
+            splitContainer3.Panel1.ResumeLayout(false);
+            splitContainer3.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
+            splitContainer3.ResumeLayout(false);
+            groupBox4.ResumeLayout(false);
+            groupBox5.ResumeLayout(false);
+            ResumeLayout(false);
+            PerformLayout();
+        }
+
+        #endregion
+
+        private MenuStrip menuStrip1;
+        private ToolStripTextBox toolStripTextBox1;
+        private ToolStripTextBox toolStripTextBox2;
+        private ToolStripTextBox toolStripTextBox3;
+        private ToolStripTextBox toolStripTextBox4;
+        private ToolStripTextBox toolStripTextBox5;
+        private ToolStripTextBox toolStripTextBox6;
+        private Panel OBCpanel;
+        private TabControl OBCtabControl;
+        private TabPage tabPage1;
+        private TabPage tabPage2;
+        private SplitContainer splitContainer1;
+        private GroupBox groupBox1;
+        private SplitContainer splitContainer2;
+        private GroupBox groupBox2;
+        private GroupBox groupBox3;
+        private RichTextBox richTextBox1;
+        private SplitContainer splitContainer3;
+        private GroupBox groupBox4;
+        private RichTextBox richTextBox2;
+        private GroupBox groupBox5;
+        private RichTextBox richTextBox3;
+    }
+}
